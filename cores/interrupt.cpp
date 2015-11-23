@@ -6,6 +6,7 @@ struct interrupt {
     void (*callback)(void);
     uint32_t mode;
     uint32_t status[2];
+    uint32_t start;
     uint32_t timeout;
     struct interrupt* next;
 };
@@ -35,34 +36,41 @@ void* intrMain(void* pargs)
         pIntr = idc.head;
         while(pIntr != NULL)
         {
-            uint8_t pin = pIntr->pin;
-            pIntr->status[1] = digitalRead(pin);
-            switch(pIntr->mode)
+            if(pIntr->pin < 128)
             {
-                case LOW:
-                    if(pIntr->status[1] == LOW)
-                        pIntr->callback();
-                    break;
-                case HIGH:
-                    if(pIntr->status[1] == HIGH)
-                        pIntr->callback();
-                    break;
-                case CHANGE:
-                    if(pIntr->status[0] ^ pIntr->status[1])
-                        pIntr->callback();
-                    break;
-                case FALLING:
-                    if(pIntr->status[0] > pIntr->status[1])
-                        pIntr->callback();
-                    break;
-                case RISING:
-                    if(pIntr->status[0] < pIntr->status[1])
-                        pIntr->callback();
-                    break;
-                default:
-                    break;
+                pIntr->status[1] = digitalRead(pIntr->pin);
+                switch(pIntr->mode)
+                {
+                    case LOW:
+                        if(pIntr->status[1] == LOW)
+                            pIntr->callback();
+                        break;
+                    case HIGH:
+                        if(pIntr->status[1] == HIGH)
+                            pIntr->callback();
+                        break;
+                    case CHANGE:
+                        if(pIntr->status[0] ^ pIntr->status[1])
+                            pIntr->callback();
+                        break;
+                    case FALLING:
+                        if(pIntr->status[0] > pIntr->status[1])
+                            pIntr->callback();
+                        break;
+                    case RISING:
+                        if(pIntr->status[0] < pIntr->status[1])
+                            pIntr->callback();
+                        break;
+                    default:
+                        break;
+                }
+                pIntr->status[0] = pIntr->status[1];
             }
-            pIntr->status[0] = pIntr->status[1];
+            else
+            {
+                if(micros() - pIntr->start > pIntr->timeout)
+                    pIntr->callback();
+            }
             pIntr = pIntr->next;
         }
         pthread_spin_unlock(&idc.spinlock);
@@ -84,6 +92,7 @@ static int addIRQEntry(uint8_t pin, void (*callback)(void), int mode, uint32_t t
     intr->callback = callback;
     intr->mode = mode;
     intr->status[0] = digitalRead(pin);
+    intr->start = micros();
     intr->timeout = timeout;
     intr->next = NULL;
 
@@ -135,7 +144,15 @@ void detachInterrupt(uint8_t interruptNum)
 {
     if(idc.head == NULL)
         return;
-    struct interrupt* pIntr = (struct interrupt*)malloc(sizeof(struct interrupt));
+    struct interrupt* pIntr = NULL;
+    pIntr = (struct interrupt*)malloc(sizeof(struct interrupt));
+    if(pIntr == NULL)
+    {
+        printf("Out of memory\n");
+        return;
+    }
+
+    pthread_spin_lock(&idc.spinlock);
     pIntr->next = idc.head;
     while(pIntr->next != NULL)
     {
@@ -157,12 +174,16 @@ void detachInterrupt(uint8_t interruptNum)
             free(target);
         }
     }
+    pthread_spin_unlock(&idc.spinlock);
 }
 
-void attachTimerInterrupt(void (*callback)(void), uint32_t microseconds)
+void attachTimerInterrupt(uint8_t pin, void (*callback)(void), uint32_t microseconds)
 {
+    if(pin != 128 || pin != 129)
+        return;
+    microseconds = microseconds > 0 ? microseconds : 1;
     pthread_spin_lock(&idc.spinlock);
-    addIRQEntry(-1, callback, 0, microseconds);
+    addIRQEntry(pin, callback, 0, microseconds);
     pthread_spin_unlock(&idc.spinlock);
 }
 

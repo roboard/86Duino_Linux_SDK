@@ -85,15 +85,17 @@ static __attribute__((constructor(101))) void _f_init()
 
 //DPMI_MEMORY_ALL_LOCK(0)
 int main(void)
-{	
+{
+	init();
+	interrupt_init();
 	initVariant();
-		      
+	
 	setup();
 
 	for (;;)
 	{
 		loop();
-//              if (serialEventRun) serialEventRun();
+		//if (serialEventRun) serialEventRun();
 	}	
 	return 0;
 }

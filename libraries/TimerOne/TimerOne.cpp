@@ -19,3 +19,74 @@
   (If you need a commercial license, please contact soc@dmp.com.tw 
    to get more information.)
 */
+#ifndef TIMERONE_cpp
+#define TIMERONE_cpp
+
+#include "TimerOne.h"
+
+TimerOne Timer1;
+
+void TimerOne::initialize(long microseconds)
+{
+	this->setPeriod(microseconds);
+}
+
+void TimerOne::setPeriod(long microseconds)
+{
+	this->periodMicroseconds = microseconds > 0 ? microseconds : 1;
+}
+
+void TimerOne::setPwmDuty(char pin, int duty)
+{
+	return;
+}
+
+void TimerOne::pwm(char pin, int duty, long microseconds)
+{
+	return;
+}
+
+void TimerOne::disablePwm(char pin)
+{
+	return;
+}
+
+void TimerOne::attachInterrupt(void (*isr)(), long microseconds)
+{
+	if(microseconds < 0)
+		microseconds = this->periodMicroseconds;
+
+	attachTimerInterrupt(128 ,isr, microseconds);
+}
+
+void TimerOne::detachInterrupt()
+{
+	return;
+}
+
+void TimerOne::resume()
+{
+	return;
+}
+
+void TimerOne::restart()
+{
+	return;
+}
+
+void TimerOne::start()
+{
+	return;
+}
+
+void TimerOne::stop()
+{
+	return;
+}
+
+unsigned long TimerOne::read()
+{
+	return 0;
+}
+
+#endif

@@ -69,7 +69,10 @@ void* intrMain(void* pargs)
             else
             {
                 if(micros() - pIntr->start > pIntr->timeout)
+				{
                     pIntr->callback();
+					pIntr->start = micros();
+				}
             }
             pIntr = pIntr->next;
         }
@@ -179,7 +182,7 @@ void detachInterrupt(uint8_t interruptNum)
 
 void attachTimerInterrupt(uint8_t pin, void (*callback)(void), uint32_t microseconds)
 {
-    if(pin != 128 || pin != 129)
+    if(!(pin == 128 || pin == 129))
         return;
     microseconds = microseconds > 0 ? microseconds : 1;
     pthread_spin_lock(&idc.spinlock);

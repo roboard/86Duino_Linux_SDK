@@ -6,6 +6,12 @@ LIBFILES  = -lstdc++ -lrt -lpthread
 OPTIONS   = -Wno-write-strings -trigraphs
 CXX = gcc
 
+THIRD_LIB_NAME    = TimerOne
+THIRD_LIB_INCLUDE = $(addprefix -I./libraries/,$(THIRD_LIB_NAME))
+THIRD_LIB_PATH    = $(addprefix libraries/,$(THIRD_LIB_NAME))
+THIRD_OBJ         = $(addsuffix .o,$(THIRD_LIB_NAME))
+EXTEN_LIB         =
+
 .PHONY : everything all clean
 
 everything : $(OBJFILES) $(EXEFILES)
@@ -13,13 +19,16 @@ everything : $(OBJFILES) $(EXEFILES)
 all : clean everything
 
 clean :
-	-rm -f $(EXEFILES) $(OBJFILES) $(SRCFILES)
+	-rm -f $(EXEFILES) $(OBJFILES) $(THIRD_OBJ) $(SRCFILES)
 
 %.o: %.cpp
-	$(CXX) -c $< $(IFLAGS) $(OPTIONS)
+	$(CXX) -c $< $(IFLAGS) $(THIRD_LIB_INCLUDE) $(OPTIONS)
 
 %.o: cores/%.cpp
 	$(CXX) -c $< $(IFLAGS) $(OPTIONS)
 
-86Duino : $(SRCFILES) $(OBJFILES)
-	$(CXX) -o $@ 86Duino.o $(OBJFILES) $(LIBFILES) $(OPTIONS)
+%.o: $(THIRD_LIB_PATH)/%.cpp
+	$(CXX) -c $< $(IFLAGS) $(THIRD_LIB_INCLUDE) $(OPTIONS)
+
+86Duino : $(SRCFILES) $(OBJFILES) $(THIRD_OBJ)
+	$(CXX) -o $@ 86Duino.o $(OBJFILES) $(THIRD_OBJ) $(LIBFILES) $(OPTIONS)

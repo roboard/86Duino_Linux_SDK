@@ -127,6 +127,8 @@ uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
 int interrupt_init(void);
 void attachInterrupt(uint8_t, void (*userFunc)(void), int mode);
 void detachInterrupt(uint8_t);
+void attachTimerInterrupt(uint8_t, void (*callback)(void), uint32_t);
+void detachTimerInterrupt(void);
 
 // wdt1 functions
 extern bool rebootByWDT;

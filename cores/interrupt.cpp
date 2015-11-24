@@ -182,12 +182,17 @@ void detachInterrupt(uint8_t interruptNum)
 
 void attachTimerInterrupt(uint8_t pin, void (*callback)(void), uint32_t microseconds)
 {
-    if(!(pin == 128 || pin == 129))
+    if(pin != 128)
         return;
     microseconds = microseconds > 0 ? microseconds : 1;
     pthread_spin_lock(&idc.spinlock);
     addIRQEntry(pin, callback, 0, microseconds);
     pthread_spin_unlock(&idc.spinlock);
+}
+
+void detachTimerInterrupt(void)
+{
+	detachInterrupt(12);
 }
 
 int interrupt_init(void)

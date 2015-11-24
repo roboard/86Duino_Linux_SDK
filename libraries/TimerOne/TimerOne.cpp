@@ -61,7 +61,7 @@ void TimerOne::attachInterrupt(void (*isr)(), long microseconds)
 
 void TimerOne::detachInterrupt()
 {
-	return;
+	detachTimerInterrupt();
 }
 
 void TimerOne::resume()

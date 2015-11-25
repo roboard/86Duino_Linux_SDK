@@ -6,11 +6,12 @@ LIBFILES  = -lstdc++ -lrt -lpthread
 OPTIONS   = -Wno-write-strings -trigraphs
 CXX = gcc
 
-THIRD_LIB_NAME    = TimerOne
+THIRD_LIB_NAME    = Ethernet
+THIRD_LIB_TARGET  = Dhcp Dns Ethernet EthernetClient EthernetServer EthernetUdp
 THIRD_LIB_INCLUDE = $(addprefix -I./libraries/,$(THIRD_LIB_NAME))
-THIRD_LIB_PATH    = $(addprefix libraries/,$(THIRD_LIB_NAME))
-THIRD_OBJ         = $(addsuffix .o,$(THIRD_LIB_NAME))
-EXTEN_LIB         =
+THIRD_LIB_PATH    = libraries/$(THIRD_LIB_NAME)
+THIRD_OBJ         = $(addsuffix .o,$(THIRD_LIB_TARGET))
+#OTHER_INCLUDE_DIR = -I./$(THIRD_LIB_PATH)/utility
 
 .PHONY : everything all clean
 
@@ -28,7 +29,7 @@ clean :
 	$(CXX) -c $< $(IFLAGS) $(OPTIONS)
 
 %.o: $(THIRD_LIB_PATH)/%.cpp
-	$(CXX) -c $< $(IFLAGS) $(THIRD_LIB_INCLUDE) $(OPTIONS)
+	$(CXX) -c $< $(IFLAGS) $(THIRD_LIB_INCLUDE) $(OTHER_INCLUDE_DIR) $(LIBFILES) $(OPTIONS)
 
 86Duino : $(SRCFILES) $(OBJFILES) $(THIRD_OBJ)
 	$(CXX) -o $@ 86Duino.o $(OBJFILES) $(THIRD_OBJ) $(LIBFILES) $(OPTIONS)

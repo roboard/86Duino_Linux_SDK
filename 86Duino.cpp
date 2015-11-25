@@ -1,34 +1,55 @@
-#include "Arduino.h"
-#include "TimerOne.h"
+#include <Ethernet.h>
 
-unsigned long _time;
-int state = LOW;
-int ind = 128;
+byte mac[] = { 
+  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+IPAddress ip(192,168,2,157);
 
-void blink()
-{
-    state = !state;
+EthernetServer server(80);
+
+void setup() {
+  Ethernet.begin(mac, ip);
+  server.begin();
 }
 
-void setup(void) {
-    pinMode(9, OUTPUT);
-    pinMode(13, OUTPUT);
-    analogWrite(9, 128);
-    //attachInterrupt(0, blink, CHANGE);
-    //attachInterrupt(1, blink, FALLING);
-    //attachInterrupt(2, blink, RISING);
-	Timer1.initialize(100000);
-	Timer1.pwm(9, 512);
-	Timer1.attachInterrupt(blink);
-    _time = millis();
-}
 
-void loop(void)
-{
-    digitalWrite(13, state);
-    if( millis() - _time > 10000 )
-    {
-        Timer1.detachInterrupt();
-        _time = millis();
+void loop() {
+  EthernetClient client = server.available();
+  if (client) {
+    printf("new client\n");
+    boolean currentLineIsBlank = true;
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        printf("%c", c);
+        if (c == '\n' && currentLineIsBlank) {
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-Type: text/html");
+          client.println("Connection: close");
+          client.println();
+          client.println("<!DOCTYPE HTML>");
+          client.println("<html>");
+          client.println("<meta http-equiv=\"refresh\" content=\"5\">");
+          for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
+            int sensorReading = analogRead(analogChannel);
+            client.print("analog input ");
+            client.print(analogChannel);
+            client.print(" is ");
+            client.print(sensorReading);
+            client.println("<br />");       
+          }
+          client.println("</html>");
+          break;
+        }
+        if (c == '\n') {
+          currentLineIsBlank = true;
+        } 
+        else if (c != '\r') {
+          currentLineIsBlank = false;
+        }
+      }
     }
+    delay(1);
+    client.stop();
+    printf("client disonnected\n");
+  }
 }

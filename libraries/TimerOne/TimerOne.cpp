@@ -56,7 +56,7 @@ void TimerOne::attachInterrupt(void (*isr)(), long microseconds)
 	if(microseconds < 0)
 		microseconds = this->periodMicroseconds;
 
-	attachTimerInterrupt(128 ,isr, microseconds);
+	attachTimerInterrupt(12, isr, microseconds);
 }
 
 void TimerOne::detachInterrupt()

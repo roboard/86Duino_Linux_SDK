@@ -19,20 +19,27 @@
   (If you need a commercial license, please contact soc@dmp.com.tw 
    to get more information.)
 */
+
 #ifndef TIMERONE_h
 #define TIMERONE_h
 
-#include <Arduino.h>
+#include "dmpcfg.h"
+#include "Arduino.h"
 
 class TimerOne
 {
+	private:
+		bool timer1Enable;
+		double _period;
+		double _duty[PINS];
+         
 	public:
-		unsigned int pwmPeriod;
-		unsigned char clockSelectBits;
-		char oldSREG;
-		long periodMicroseconds;
+		TimerOne();
 
-		void initialize(long microseconds=1000000);
+		long periodMicroseconds;
+		unsigned int pwmPeriod;
+		
+		void initialize(long microseconds=1000000L);
 		void start();
 		void stop();
 		void restart();
@@ -47,5 +54,22 @@ class TimerOne
 		void (*isrCallback)();
 };
 
+#if defined (DMP_DOS_DJGPP)
+class TimerRealTimeClock {
+	private:
+		unsigned char _freq;
+		bool timerRTCEnable;
+		
+	public:
+		TimerRealTimeClock();
+		void initialize(long microseconds=500000L);
+		void attachInterrupt(void (*isr)(), long microseconds=-1);
+		void detachInterrupt();
+		void setPeriod(long microseconds);
+		void (*isrCallback)();
+};
+extern TimerRealTimeClock TimerRTC;
+#endif
 extern TimerOne Timer1;
+
 #endif

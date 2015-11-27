@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <pthread.h>
+#include "OSAbstract.h"
 #include "mcm.h"
 
 #define MCPFAU_CAP_LEVEL0 (0x08L << 16)
@@ -55,6 +56,7 @@ void* intrMain(void* pargs)
             {
 				m = i/3;
 				n = i%3;
+				lockMCMSIF();
                 switch(idc.intr[i].mode)
                 {
                 case LOW:
@@ -83,6 +85,7 @@ void* intrMain(void* pargs)
                 default:
                     break;
                 }
+				unLockMCMSIF();
             }
             else
             {
@@ -160,6 +163,7 @@ static int addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, u
 		uint16_t crossbar_ioaddr;
 		int32_t mc = interruptNum/3;
 		int32_t md = MCSIF_MODULEB;
+		lockMCMSIF();
 		if(mcm_init[mc] == false)
 			mcmsif_init(mc);
 		crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
@@ -194,6 +198,7 @@ static int addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, u
 		// switch crossbar to MCM_SIF_PIN
 		io_outpb(crossbar_ioaddr + 0x90 + pin_offset[interruptNum], 0x08);//RICH IO
 		mcsif_Enable(mc, md);
+		unLockMCMSIF();
 	}
 	
 	pthread_spin_unlock(&idc.spinlock);
@@ -236,8 +241,10 @@ void detachInterrupt(uint8_t interruptNum)
 	pthread_spin_lock(&idc.spinlock);
 	idc.intr[interruptNum].used = false;
 	uint8_t mc = interruptNum/3;
+	lockMCMSIF();
 	if(mc < 4 && !(idc.intr[mc*3].used) && !(idc.intr[mc*3 + 1].used) && !(idc.intr[mc*3 + 2].used))
 		mcmsif_close(mc);
+	unLockMCMSIF();
 	pthread_spin_unlock(&idc.spinlock);
 }
 

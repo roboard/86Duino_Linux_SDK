@@ -86,8 +86,7 @@ bool init() {
         while((io_inpb(0xfe02) & 0x01) != 0) io_inpb(0xfe04);
 
 	// set MCM Base Address
-	set_MMIO();
-	mc_setbaseaddr();
+	mcmInit();
 	for(i=0; i<4; i++)
 		mc_SetMode(i, MCMODE_PWM_SIFB);
 

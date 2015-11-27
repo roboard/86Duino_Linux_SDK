@@ -31,12 +31,12 @@
 
 #include "mcm.h"
 
-#if defined(DJGPP)
+#if defined(DMP_DOS_DJGPP)
     #include <go32.h>
     #include <dpmi.h>
     #include <sys/farptr.h>
     #include <pc.h>
-#include <dos.h>
+	#include <dos.h>
 #endif
 
 bool MC_useMMIO = false;
@@ -289,56 +289,55 @@ static bool dpmi_SelFree(int selector) {
 /*----------------  end of DPMI Functions (for internal use)  ----------------*/
 
 
-
+/*
 static unsigned long MMIO_baseAddr = 0L;
 static int           mmio_selector = -1;
 static unsigned long mmio_linaddr  = 0x00000000L;
-/*
+
 static void mmio_outpdw(unsigned long offs, unsigned long val) {
-    #ifdef DJGPP
+    #ifdef DMP_DOS_DJGPP
         _farpokel(mmio_selector, offs, val);
     #endif
 }
 
 static unsigned long mmio_inpdw(unsigned long offs) {
-    #ifdef DJGPP
+    #ifdef DMP_DOS_DJGPP
         return _farpeekl(mmio_selector, offs);
     #endif
 }
 
 static void mmio_outpb(unsigned long offs, unsigned char val) {
-    #ifdef DJGPP
+    #ifdef DMP_DOS_DJGPP
         _farpokeb(mmio_selector, offs, val);
     #endif
 }
 
 static unsigned char mmio_inpb(unsigned long offs) {
-    #ifdef DJGPP
+    #ifdef DMP_DOS_DJGPP
         return _farpeekb(mmio_selector, offs);
     #endif
 }
 */
 
-
 static unsigned PWM_baseAddr = 0;
+static unsigned long MMIO_baseAddr = 0L;
+static void* io_handle = NULL;
 unsigned long mc_setbaseaddr(void) {
     if (MC_useMMIO == true && MMIO_baseAddr == 0L)
     {
         MMIO_baseAddr = read_mc_pcireg(0x14);
-        #ifdef DJGPP
-            mmio_linaddr  = dpmi_LinMapAlloc(MMIO_baseAddr, 0x1000);
-            mmio_selector = dpmi_SelAlloc(mmio_linaddr, 0x1000);
-        #endif        
-        return 0L;
+        io_handle = io_Alloc(IO_USE_MMIO, MMIO_baseAddr, 0x380);
+        return (unsigned long)MMIO_baseAddr;
     }
     else if(PWM_baseAddr == 0L)
     {
         PWM_baseAddr = (unsigned)(read_mc_pcireg(0x10) & 0x0000fff0L);
+        io_handle = io_Alloc(IO_USE_PORTIO, PWM_baseAddr, 0xD4);
         return (unsigned long)PWM_baseAddr;
     }
     else
     {
-	return 0;
+		return 0;
     }
 }
 
@@ -348,21 +347,20 @@ int mc_getIRQ(void) {
 
 void mc_outp(int mc, unsigned long idx, unsigned long val) {
     // if (USE_8051B == true) { mc8051_outp(mc, idx, val); return; }
+	if(io_handle == NULL) return;
 
     if (MC_useMMIO == true)
     {
-	/*        
 	if (mc == MC_GENERAL)
-            mmio_outpdw(idx, val);
+            io_Out32(io_handle, idx, val);
         else
-            mmio_outpdw(0x40L + (unsigned long)mc * 0xd0L + idx, val);
-	*/
+            io_Out32(io_handle, 0x40L + (unsigned long)mc * 0xd0L + idx, val);
     }
     else
     {   
         io_DisableINT();
-        io_outpdw(PWM_baseAddr + 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window 
-        io_outpdw(PWM_baseAddr + (unsigned)idx, val);
+        io_Out32(io_handle, 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window
+        io_Out32(io_handle, (unsigned)idx, val);
         io_RestoreINT();
     }
 }
@@ -370,21 +368,20 @@ void mc_outp(int mc, unsigned long idx, unsigned long val) {
 unsigned long mc_inp(int mc, unsigned long idx) {
     unsigned long tmp;
     // if (USE_8051B == true) return mc8051_inp(mc, idx);
+    if(io_handle == NULL) return 0L;
 
     if (MC_useMMIO == true)
     {
-	/*        
-	if (mc == MC_GENERAL)
-            return mmio_inpdw(idx);
+		if (mc == MC_GENERAL)
+            return io_In32(io_handle, idx);
         else
-            return mmio_inpdw(0x40L + (unsigned long)mc * 0xd0L + idx);
-	*/
+            return io_In32(io_handle, 0x40L + (unsigned long)mc * 0xd0L + idx);
     }
     else
     {   
         io_DisableINT();
-        io_outpdw(PWM_baseAddr + 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window 
-        tmp = io_inpdw(PWM_baseAddr + (unsigned)idx);
+        io_Out32(io_handle, 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window
+        tmp = io_In32(io_handle, (unsigned)idx);
         io_RestoreINT();
         return tmp;
     }
@@ -392,21 +389,20 @@ unsigned long mc_inp(int mc, unsigned long idx) {
 
 void mc_outpb(int mc, unsigned long idx, unsigned char val) {
     // if (USE_8051B == true) { mc8051_outpb(mc, idx, val); return; }
+    if(io_handle == NULL) return;
 
     if (MC_useMMIO == true)
     {
-	/*
         if (mc == MC_GENERAL)
-            mmio_outpb(idx, val);
+            io_Out32(io_handle, idx, val);
         else
-            mmio_outpb(0x40L + (unsigned long)mc * 0xd0L + idx, val);
-	*/
+            io_Out32(io_handle, 0x40L + (unsigned long)mc * 0xd0L + idx, val);
     }
     else
     {   
         io_DisableINT();
-        io_outpdw(PWM_baseAddr + 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window 
-        io_outpb(PWM_baseAddr + (unsigned)idx, val);
+        io_Out32(io_handle, 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window
+        io_Out8(io_handle, (unsigned)idx, val);
         io_RestoreINT();
     }
 }
@@ -414,22 +410,21 @@ void mc_outpb(int mc, unsigned long idx, unsigned char val) {
 unsigned char mc_inpb(int mc, unsigned long idx) {
     unsigned char tmp;
     // // if (USE_8051B == true) return mc8051_inpb(mc, idx);
+    if(io_handle == NULL) return 0L;
 
     if (MC_useMMIO == true)
     {
-	/*
         if (mc == MC_GENERAL)
-            return mmio_inpb(idx);
+            return io_In8(io_handle, idx);
         else
-            return mmio_inpb(0x40L + (unsigned long)mc * 0xd0L + idx);
+            return io_In8(io_handle, 0x40L + (unsigned long)mc * 0xd0L + idx);
         return 0;
-	*/
     }
     else
     {   
         io_DisableINT();
-        io_outpdw(PWM_baseAddr + 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window 
-        tmp = io_inpb(PWM_baseAddr + (unsigned)idx);
+        io_Out32(io_handle, 0xd0, 1UL<<(mc+1));  // paging to corresponding reg window
+        tmp = io_In8(io_handle, (unsigned)idx);
         io_RestoreINT();
         return tmp;
     }

@@ -28,6 +28,7 @@
 #include "io.h"
 #include "dmpcfg.h"
 #include "mcm.h"
+#include "OSAbstract.h"
 
 #define BaseAddress (0xfe00)
 #define TimeOut		(1000)
@@ -68,19 +69,18 @@ void Close_Pwm(uint8_t pin) {
 	
 	mc = arduino_to_mc_md[MCM_MC][pin];
 	md = arduino_to_mc_md[MCM_MD][pin];
-	
-	io_DisableINT();
+
+	lockMCM(mc, md);
 	if(mc_md_inuse[pin] == 1)
 	{	
 		mcpwm_Disable(mc, md); 
 		mc_md_inuse[pin] = 0;
 	}
-	io_RestoreINT();   
+        unLockMCM(mc, md);
 }
 
 int analogRead(uint8_t pin) {
 	unsigned long d;
-	unsigned long time;
 	
 	if((pin > 6 && pin < 45) || pin > 51) return 0xffff;
 	
@@ -88,25 +88,17 @@ int analogRead(uint8_t pin) {
 		if(pin >= 45) pin -= 45;
 	#endif
 	
-	while((io_inpb(BaseAddress + 2) & 0x01) != 0)
-		io_inpb(BaseAddress + 4);
-	
-	io_DisableINT();	
+	lockADC();
 	io_outpb(BaseAddress + 1, 0x08); // disable ADC
 	io_outpb(BaseAddress + 0, (0x01<<pin));
 	io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
-	
-	for(time = timer_NowTime(); (io_inpb(BaseAddress + 2) & 0x01) == 0;)
-	{
-		if((timer_NowTime() - time) > TimeOut)
-		{
-			io_RestoreINT();
-			return 0xffff;
-		}
-	}
-	
-    d = io_inpw(BaseAddress + 4);
-	io_RestoreINT();
+        io_inpb(BaseAddress + 2);
+        io_inpb(BaseAddress + 2);
+        io_inpb(BaseAddress + 2);
+	if((io_inpb(BaseAddress + 2) & 0x01) == 0) {unLockADC(); return 0xffff;}
+
+        d = io_inpw(BaseAddress + 4);
+	unLockADC();
 	
 	d = mapResolution((d&0x7ffL), ADC_RESOLUTION, _readResolution);
 	
@@ -114,7 +106,6 @@ int analogRead(uint8_t pin) {
 }
 
 #define MAX_RESOLUTION    (100000L)
-static unsigned short crossbar_ioaddr = 0;
 void analogWrite(uint8_t pin, uint32_t val) {
 	float unit;
 	int mc, md;
@@ -141,7 +132,7 @@ void analogWrite(uint8_t pin, uint32_t val) {
 	    }
 		  
 	    // Init H/W PWM
-	    io_DisableINT();
+	    lockMCM(mc, md);
 	    if(mc_md_inuse[pin] == 0)
 		{
 			mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_CANCEL);
@@ -152,31 +143,28 @@ void analogWrite(uint8_t pin, uint32_t val) {
 			
 			mcpwm_SetWaveform(mc, md, MCPWM_EDGE_A0I1);
 			mcpwm_SetSamplCycle(mc, md, 1999L);   // sample cycle: 20ms
-			
-			crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
+
 			if (pin <= 9)
-				io_outpb(crossbar_ioaddr + 2, 0x01); // GPIO port2: 0A, 0B, 0C, 3A
+				io_outpb(CROSSBARBASE + 2, 0x01); // GPIO port2: 0A, 0B, 0C, 3A
 			else if (pin > 28)
-		    	io_outpb(crossbar_ioaddr, 0x03); // GPIO port0: 2A, 2B, 2C, 3C
+		    	io_outpb(CROSSBARBASE, 0x03); // GPIO port0: 2A, 2B, 2C, 3C
 			else
-				io_outpb(crossbar_ioaddr + 3, 0x02); // GPIO port3: 1A, 1B, 1C, 3B
+				io_outpb(CROSSBARBASE + 3, 0x02); // GPIO port3: 1A, 1B, 1C, 3B
 	    }
-	    io_RestoreINT();
 	    
 	    val = mapResolution(val, _writeResolution, PWM_RESOLUTION);
 	    unit = ((float)MAX_RESOLUTION)/((float)(0x00000001L<<PWM_RESOLUTION));
-	    
-	    io_DisableINT();
+
         if(mcpwm_ReadReloadPWM(mc, md) != 0) mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_CANCEL);
         mcpwm_SetWidth(mc, md, 1000L*SYSCLK, ((float)val)*unit);
 	    mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_PEREND);
 	    if(mc_md_inuse[pin] == 0)
 		{
 			mcpwm_Enable(mc, md);
-			io_outpb(crossbar_ioaddr + 0x90 + pinMap[pin], 0x08);
+			io_outpb(CROSSBARBASE + 0x90 + pinMap[pin], 0x08);
 			mc_md_inuse[pin] = 1;
 	    }
-		io_RestoreINT();  
+	    unLockMCM(mc, md);
 	}
 }
 
@@ -188,25 +176,20 @@ double cpuTemperature(uint8_t unit) {
 	unsigned long d;
 	unsigned long time;
 	double temperature;
-	
-	while((io_inpb(BaseAddress + 2) & 0x01) != 0)
-		io_inpb(BaseAddress + 4);
 
-	io_DisableINT();
+	lockADC();
 	sb1_Write(0xe0, sb1_Read(0xe0) | (0x01L<<21));
 	io_outpb(BaseAddress + 1, 0x08); // disable ADC
 	io_outpb(BaseAddress + 0, 0x80); // ex: any pin is temperature pin
 	io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
+	io_inpb(BaseAddress + 2);
+        io_inpb(BaseAddress + 2);
+        io_inpb(BaseAddress + 2);
+	if((io_inpb(BaseAddress + 2) & 0x01) == 0) {unLockADC(); return 0xffff;}
 
-	for(time = timer_NowTime(); (io_inpb(BaseAddress + 2) & 0x01) == 0; )
-	{
-		if(timer_NowTime() - time > TimeOut)
-			return 0xffff;
-	}
-
-    d = io_inpw(BaseAddress + 4);
+        d = io_inpw(BaseAddress + 4);
 	sb1_Write(0xe0, sb1_Read(0xe0) & ~(0x01L<<21));
-	io_RestoreINT();
+	unLockADC();
 
 	temperature = 0.2173913*(d&0x7ffL)-66.0;
 	

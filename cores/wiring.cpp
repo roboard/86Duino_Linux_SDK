@@ -82,9 +82,11 @@ bool init() {
 	sb_Write(0xbc, sb_Read(0xbc) & (~(1L<<28)));  // active adc
 	sb1_Write16(0xde, sb1_Read16(0xde) | 0x02);   // not Available for 8051A Access ADC
 	sb1_Write(0xe0, 0x0050fe00L); // baseaddr = 0xfe00, disable irq
-	
+	io_outpb(0xfe01, 0x00);
+        while((io_inpb(0xfe02) & 0x01) != 0) io_inpb(0xfe04);
+
 	// set MCM Base Address
-	// set_MMIO();
+	set_MMIO();
 	mc_setbaseaddr();
 	for(i=0; i<4; i++)
 		mc_SetMode(i, MCMODE_PWM_SIFB);

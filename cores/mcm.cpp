@@ -174,9 +174,9 @@ DMPAPI(void) mc_outpb(int mc, unsigned long idx, unsigned char val) {
     if (MC_useMMIO == true)
     {
         if (mc == MC_GENERAL)
-            io_Out32(io_handle, idx, val);
+            io_Out8(io_handle, idx, val);
         else
-            io_Out32(io_handle, 0x40L + (unsigned long)mc * 0xd0L + idx, val);
+            io_Out8(io_handle, 0x40L + (unsigned long)mc * 0xd0L + idx, val);
     }
     else
     {   

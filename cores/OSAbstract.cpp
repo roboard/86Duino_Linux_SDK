@@ -1,3 +1,4 @@
+#include "dmpcfg.h"
 #include <pthread.h>
 
 #define GPIONUM    (10)
@@ -66,7 +67,7 @@ int unLockGPIO(int n) {
 	return pthread_spin_unlock(&gpio_lock_arary[n]);
 #elif defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM) || defined (DMP_DOS_BC30)
 	io_RestoreINT();
-#nedif
+#endif
 }
 
 int lockADC(void) {
@@ -88,7 +89,7 @@ int unLockADC(void) {
 	return pthread_spin_unlock(&LKADC);
 #elif defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM) || defined (DMP_DOS_BC30)
 	io_RestoreINT();
-#nedif
+#endif
 }
 
 int lockMCM(int mc, int md) {
@@ -122,7 +123,7 @@ int unLockMCM(int mc, int md) {
 	return pthread_spin_unlock(&mcm_lock_arary[index]);
 #elif defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM) || defined (DMP_DOS_BC30)
 	io_RestoreINT();
-#nedif
+#endif
 }
 
 int lockMCMGENAL(void) {
@@ -144,7 +145,7 @@ int unLockMCMGENAL(void) {
 	return pthread_spin_unlock(&LKMCGENAL);
 #elif defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM) || defined (DMP_DOS_BC30)
 	io_RestoreINT();
-#nedif
+#endif
 }
 
 int lockMCMSIF(void) {
@@ -166,5 +167,5 @@ int unLockMCMSIF(void) {
 	return pthread_spin_unlock(&LKMCSIF);
 #elif defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM) || defined (DMP_DOS_BC30)
 	io_RestoreINT();
-#nedif
+#endif
 }

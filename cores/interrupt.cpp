@@ -97,12 +97,14 @@ void* intrMain(void* pargs)
             }
         }
         pthread_spin_unlock(&idc.spinlock);
+		pthread_spin_lock(&idc.spinlock);
 		for(int i = 0; i < INTERRUPTS; i++)
 		{
 			if(do_callback[i] && idc.intr[i].used)
 				idc.intr[i].callback();
 			do_callback[i] = false;
 		}
+		pthread_spin_unlock(&idc.spinlock);
 	}
     pthread_exit(NULL);
 }

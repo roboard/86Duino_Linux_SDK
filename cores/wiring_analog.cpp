@@ -28,7 +28,10 @@
 #include "io.h"
 #include "dmpcfg.h"
 #include "mcm.h"
-#include "OSAbstract.h"
+
+#if defined (DMP_LINUX)
+    #include "OSAbstract.h"
+#endif
 
 #define BaseAddress (0xfe00)
 #define TimeOut		(1000)
@@ -70,13 +73,23 @@ void Close_Pwm(uint8_t pin) {
 	mc = arduino_to_mc_md[MCM_MC][pin];
 	md = arduino_to_mc_md[MCM_MD][pin];
 
-	lockMCM(mc, md);
+	#if defined (DMP_LINUX)
+        lockMCM(mc, md);
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_DisableINT();
+    #endif
+    
 	if(mc_md_inuse[pin] == 1)
 	{	
 		mcpwm_Disable(mc, md); 
 		mc_md_inuse[pin] = 0;
 	}
+    
+    #if defined (DMP_LINUX)
         unLockMCM(mc, md);
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_RestoreINT();
+    #endif    
 }
 
 int analogRead(uint8_t pin) {
@@ -88,17 +101,32 @@ int analogRead(uint8_t pin) {
 		if(pin >= 45) pin -= 45;
 	#endif
 	
-	lockADC();
+    #if defined (DMP_LINUX)
+        lockADC();
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_DisableINT();
+    #endif
+    
 	io_outpb(BaseAddress + 1, 0x08); // disable ADC
 	io_outpb(BaseAddress + 0, (0x01<<pin));
 	io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
-        io_inpb(BaseAddress + 2);
-        io_inpb(BaseAddress + 2);
-        io_inpb(BaseAddress + 2);
-	if((io_inpb(BaseAddress + 2) & 0x01) == 0) {unLockADC(); return 0xffff;}
-
-        d = io_inpw(BaseAddress + 4);
-	unLockADC();
+    for(int i=0; i<20; i++) io_inpb(BaseAddress + 2);
+	if((io_inpb(BaseAddress + 2) & 0x01) == 0)
+    {
+    #if defined (DMP_LINUX)
+        unLockADC();
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_RestoreINT();
+    #endif
+        return 0xffff;
+    }
+    d = io_inpw(BaseAddress + 4);
+    
+    #if defined (DMP_LINUX)
+        unLockADC();
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_RestoreINT();
+    #endif
 	
 	d = mapResolution((d&0x7ffL), ADC_RESOLUTION, _readResolution);
 	
@@ -132,7 +160,11 @@ void analogWrite(uint8_t pin, uint32_t val) {
 	    }
 		  
 	    // Init H/W PWM
-	    lockMCM(mc, md);
+        #if defined (DMP_LINUX)
+            lockMCM(mc, md);
+        #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+            io_DisableINT();
+        #endif
 	    if(mc_md_inuse[pin] == 0)
 		{
 			mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_CANCEL);
@@ -164,7 +196,11 @@ void analogWrite(uint8_t pin, uint32_t val) {
 			io_outpb(CROSSBARBASE + 0x90 + pinMap[pin], 0x08);
 			mc_md_inuse[pin] = 1;
 	    }
-	    unLockMCM(mc, md);
+        #if defined (DMP_LINUX)
+            unLockMCM(mc, md);
+        #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+            io_RestoreINT();
+        #endif    
 	}
 }
 
@@ -177,19 +213,34 @@ double cpuTemperature(uint8_t unit) {
 	unsigned long time;
 	double temperature;
 
-	lockADC();
+    #if defined (DMP_LINUX)
+        lockADC();
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_DisableINT();
+    #endif
+    
 	sb1_Write(0xe0, sb1_Read(0xe0) | (0x01L<<21));
 	io_outpb(BaseAddress + 1, 0x08); // disable ADC
 	io_outpb(BaseAddress + 0, 0x80); // ex: any pin is temperature pin
 	io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
-	io_inpb(BaseAddress + 2);
-        io_inpb(BaseAddress + 2);
-        io_inpb(BaseAddress + 2);
-	if((io_inpb(BaseAddress + 2) & 0x01) == 0) {unLockADC(); return 0xffff;}
-
-        d = io_inpw(BaseAddress + 4);
+	for(int i=0; i<20; i++) io_inpb(BaseAddress + 2);
+	if((io_inpb(BaseAddress + 2) & 0x01) == 0)
+    {
+    #if defined (DMP_LINUX)
+        unLockADC();
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_RestoreINT();
+    #endif
+        return 0xffff;
+    }
+    d = io_inpw(BaseAddress + 4);
 	sb1_Write(0xe0, sb1_Read(0xe0) & ~(0x01L<<21));
-	unLockADC();
+
+    #if defined (DMP_LINUX)
+        unLockADC();
+    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+        io_RestoreINT();
+    #endif
 
 	temperature = 0.2173913*(d&0x7ffL)-66.0;
 	

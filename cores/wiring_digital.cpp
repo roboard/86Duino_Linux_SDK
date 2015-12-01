@@ -19,7 +19,9 @@
 
 #include "Arduino.h"
 #include "io.h"
-#include "OSAbstract.h"
+#if defined (DMP_LINUX)
+    #include "OSAbstract.h"
+#endif
 
 #define TRI_STATE     (0x00)
 #define PULL_UP       (0x01)

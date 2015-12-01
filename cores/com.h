@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+/*
 typedef struct
 {
 	int   com;
@@ -59,7 +60,6 @@ typedef struct
 	DMPAPI(bool) (*TxReady)(void *);
 	DMPAPI(void) (*FlushWFIFO)(void *);
 	
-	/* only for UART */
 	DMPAPI(void) (*SetFormat)(void *, unsigned char);
 	DMPAPI(void) (*SetFlowControl)(void *, int);
 	DMPAPI(void) (*EnableFIFO)(void *, int);
@@ -75,126 +75,93 @@ typedef struct
 	DMPAPI(void) (*EnableDebugMode)(void *);
 	DMPAPI(void) (*DisableDebugMode)(void *);
 	
-	/* only for USB device */
-	DMPAPI(bool) (*Ready)(void *);
-	DMPAPI(void) (*SetSerialState)(void *, unsigned short);
-	DMPAPI(Line_Coding *) (*GetLineCoding)(void *);
-	DMPAPI(unsigned short) (*GetControlLineState)(void *);
-	
-	/* only for CAN bus */
-	DMPAPI(void) (*Reset)(void *);
-	DMPAPI(bool) (*AddIDFilter)(void *, int, int, unsigned long, unsigned long);
-	DMPAPI(bool) (*GetIDFilter)(void *, int, int *, unsigned long *, unsigned long *);
-	DMPAPI(bool) (*DelIDFilter)(void *, int);
-	DMPAPI(void) (*ClearIDList)(void *);
-	DMPAPI(void) (*EnableBypass)(void *);
-	DMPAPI(void) (*DisableBypass)(void *);
-	DMPAPI(bool) (*SetEWLimit)(void *, int);
-	DMPAPI(int)  (*GetEWLimit)(void *);
-	DMPAPI(int)  (*GetTxErrorCount)(void *);
-	DMPAPI(int)  (*GetRxErrorCount)(void *);
-	DMPAPI(void) (*EnableStoreError)(void *);
-	DMPAPI(void) (*DisableStoreError)(void *);
-	DMPAPI(void) (*SetCANBusOffHandler)(void *, void (*)(CAN_Bus *));
-	DMPAPI(unsigned char)  (*GetNowState)(void *);
-	DMPAPI(unsigned char) (*PopError)(void *);
-	DMPAPI(unsigned char) (*GetLastError)(void *);
-	DMPAPI(bool) (*ReadCAN)(void *, CANFrame*);
-	DMPAPI(bool) (*WriteCAN)(void *, CANFrame*);
-	
 } COMPort;
+*/
 
-// Note that set USB-Device DETECT & ONOFF pins before init USB_COM
-DMPAPI(void) com_SetUSBPins(char port1, char pin1, char port2, char pin2);
-
-#define SIZE_OF_COM			(12) // (COM1 ~ COM10) + USB_COM + CAN_BUS
+#define SIZE_OF_COM		(12) // (COM1 ~ COM10) + USB_COM + CAN_BUS
 
 #define COM1			   	(0x00)
 #define COM2			   	(0x01)
 #define COM3			   	(0x02)
 #define COM4			   	(0x03)
+/*
 #define COM5			   	(0x04)
 #define COM6			   	(0x05)
 #define COM7			   	(0x06)
 #define COM8			   	(0x07)
 #define COM9			   	(0x08)
 #define COM10				(0x09)
-#define USB_COM			   	(0x0A)
+#define USB_COM		                    (0x0A)
 #define CAN_BUS				(0x0B)
-DMPAPI(COMPort *) com_Init(int com);
-DMPAPI(void) com_Close(COMPort *port);
+*/
+DMPAPI(bool) com_Init(int com);
+     #define COM_ADUPLEX            (0xff)  // auto. select duplex mode according to RoBoard's version
+     #define COM_FDUPLEX            (0)     // full-duplex mode
+     #define COM_HDUPLEX            (1)     // half-duplex by TX/RX-short
+     #define COM_HDUPLEX_RTS        (2)     // half-duplex by RTS-control
+     #define COM_HDUPLEX_TXDEN      (3)     // half-duplex by TXDEN-control
+DMPAPI(void) com_Close(int com);
 
-DMPAPI(bool) com_SetBPS(COMPort *port, unsigned long bps);
+DMPAPI(bool) com_SetBaud(int com, unsigned int bps);
 // for UART
-#define COM_UARTBAUD_6000000BPS         (0xC001FFFFUL)
-#define COM_UARTBAUD_3000000BPS         (0xC002FFFFUL)
-#define COM_UARTBAUD_2000000BPS         (0xC003FFFFUL)
-#define COM_UARTBAUD_1500000BPS         (0xC004FFFFUL)
-#define COM_UARTBAUD_1000000BPS         (0xC006FFFFUL)
-#define COM_UARTBAUD_750000BPS          (0xC0088002UL)
-#define COM_UARTBAUD_500000BPS          (0xC00C8003UL)
-#define COM_UARTBAUD_461538BPS          (0xC00DFFFFUL)
-#define COM_UARTBAUD_333333BPS          (0xC012FFFFUL)
-#define COM_UARTBAUD_300000BPS          (0xC0148005UL)
-#define COM_UARTBAUD_250000BPS          (0x800C8006UL)
-#define COM_UARTBAUD_200000BPS          (0x800FFFFFUL)
-#define COM_UARTBAUD_150000BPS          (0x8014800AUL)
-#define COM_UARTBAUD_125000BPS          (0x8018800CUL)
-#define COM_UARTBAUD_115200BPS          (0x00010001UL)
-#define COM_UARTBAUD_57600BPS           (0x00020002UL)
-#define COM_UARTBAUD_38400BPS           (0x00030003UL)
-#define COM_UARTBAUD_28800BPS           (0x00040004UL)
-#define COM_UARTBAUD_19200BPS           (0x00060006UL)
-#define COM_UARTBAUD_14400BPS           (0x00080008UL)
-#define COM_UARTBAUD_9600BPS            (0x000C000CUL)
-#define COM_UARTBAUD_4800BPS            (0x00180018UL)
-#define COM_UARTBAUD_2400BPS            (0x00300030UL)
-#define COM_UARTBAUD_1200BPS            (0x00600060UL)
-#define COM_UARTBAUD_600BPS             (0x00C000C0UL)
-#define COM_UARTBAUD_300BPS             (0x01800180UL)
-#define COM_UARTBAUD_50BPS              (0x09000900UL)
-// for CAN bus
-#define COM_CAN_BPS_1000K               (CAN_BPS_1000K)
-#define COM_CAN_BPS_833K                (CAN_BPS_833K)
-#define COM_CAN_BPS_500K                (CAN_BPS_500K)
-#define COM_CAN_BPS_250K                (CAN_BPS_250K)
-#define COM_CAN_BPS_125K                (CAN_BPS_125K)
-#define COM_CAN_BPS_100K                (CAN_BPS_100K)
-#define COM_CAN_BPS_83K3                (CAN_BPS_83K3)
-#define COM_CAN_BPS_50K                 (CAN_BPS_50K)
-#define COM_CAN_BPS_20K                 (CAN_BPS_20K)
-#define COM_CAN_BPS_10K                 (CAN_BPS_10K)
-DMPAPI(void) com_SetTimeOut(COMPort *port, unsigned long rx_timeout, unsigned long tx_timeout);
+    #define COMBAUD_748800BPS       (0x8002)  // 57600 * 13 (invalid for RB-100)
+    #define COMBAUD_499200BPS       (0x8003)  // 38400 * 13 (invalid for RB-100)
+    #define COMBAUD_249600BPS       (0x8006)  // 19200 * 13 (invalid for RB-100)
+    #define COMBAUD_115200BPS       (0x0001)
+    #define COMBAUD_57600BPS        (0x0002)
+    #define COMBAUD_38400BPS        (0x0003)
+    #define COMBAUD_19200BPS        (0x0006)
+    #define COMBAUD_9600BPS         (0x000c)
+    #define COMBAUD_4800BPS         (0x0018)
+    #define COMBAUD_2400BPS         (0x0030)
+    #define COMBAUD_1200BPS         (0x0060)
+    #define COMBAUD_300BPS          (0x0180)
+    #define COMBAUD_50BPS           (0x0900)
+
+//DMPAPI(void) com_SetTimeOut(int com, unsigned long rx_timeout, unsigned long tx_timeout);
 #define NO_TIMEOUT         (-1)
 
-DMPAPI(unsigned int) com_Read(COMPort *port); // not for CAN bus
-DMPAPI(int)  com_Receive(COMPort *port, unsigned char* buf, int bsize);
+DMPAPI(unsigned int) com_Read(int com); // not for CAN bus
+DMPAPI(bool)  com_Receive(int com, unsigned char* buf, int bsize);
+DMPAPI(int) com_QueryRFIFO(int com);
+/*
 DMPAPI(int)  com_QueryRxQueue(COMPort *port);
 DMPAPI(bool) com_RxQueueFull(COMPort *port);
 DMPAPI(bool) com_RxQueueEmpty(COMPort *port);
 DMPAPI(void) com_FlushRxQueue(COMPort *port);
+*/
 
-DMPAPI(bool) com_Write(COMPort *port, unsigned char val); // not for CAN bus
-DMPAPI(int)  com_Send(COMPort *port, unsigned char* buf, int bsize);
+DMPAPI(bool) com_Write(int com, unsigned char val); // not for CAN bus
+DMPAPI(bool) com_Send(int com, unsigned char* buf, int bsize);
+DMPAPI(bool) com_FlushWFIFO(int com);
+
+/*
 DMPAPI(int)  com_QueryTxQueue(COMPort *port);
 DMPAPI(bool) com_TxQueueFull(COMPort *port);
 DMPAPI(bool) com_TxQueueEmpty(COMPort *port);
 DMPAPI(void) com_FlushTxQueue(COMPort *port);
 DMPAPI(bool) com_TxReady(COMPort *port);
-DMPAPI(void) com_FlushWFIFO(COMPort *port);
-
+*/
 
 /* only for UART */
-DMPAPI(void) com_SetFormat(COMPort *port, unsigned char format);
+DMPAPI(bool) com_SetFormat(int com, unsigned char format);
 #define BYTESIZE5          (0x00)
 #define BYTESIZE6          (0x01)
 #define BYTESIZE7          (0x02)
 #define BYTESIZE8          (0x03)
 #define STOPBIT1           (0x00)
 #define STOPBIT2           (0x04)
-#define NOPARITY           (0x00)
-#define ODDPARITY          (0x08)
-#define EVENPARITY         (0x18)
+#define COM_NOPARITY           (0x00)
+#define COM_ODDPARITY          (0x08)
+#define COM_EVENPARITY         (0x18)
+
+//-- values for the "bytesize" argument
+#define COM_BYTESIZE5          (5)
+#define COM_BYTESIZE6          (6)
+#define COM_BYTESIZE7          (7)
+#define COM_BYTESIZE8          (8)
+
+/*
 DMPAPI(void) com_SetFlowControl(COMPort *port, int control);
 #define NO_CONTROL         (0)
 #define RTS_CTS            (1)
@@ -205,8 +172,7 @@ DMPAPI(void) com_EnableFIFO(COMPort *port, int fifo);
 #define FIFO_032		   (32)
 #define FIFO_128		   (128)
 DMPAPI(bool) com_SetWFIFOSize(COMPort *port, int size); // setup after enable/disable fifo
-DMPAPI(void) com_ClearRFIFO(COMPort *port);
-DMPAPI(void) com_ClearWFIFO(COMPort *port);
+
 DMPAPI(void) com_SetLSRHandler(COMPort *port, void (*func)(SerialPort *port));
 DMPAPI(void) com_SetMSRHandler(COMPort *port, void (*func)(SerialPort *port));
 DMPAPI(unsigned char) com_GetLSR(COMPort *port);
@@ -227,52 +193,20 @@ DMPAPI(unsigned char) com_GetMSR(COMPort *port);
 #define MSR_TERI           (0x04)
 #define MSR_DDSR           (0x02)
 #define MSR_DCTS           (0x01)
-DMPAPI(void) com_EnableHalfDuplex(COMPort *port);
-DMPAPI(void) com_EnableFullDuplex(COMPort *port);
-DMPAPI(void) com_EnableDebugMode(COMPort *port);
-DMPAPI(void) com_DisableDebugMode(COMPort *port);
+*/
+DMPAPI(bool) com_ClearRFIFO(int com);
+DMPAPI(bool) com_ClearWFIFO(int com);
+DMPAPI(void) com_EnableHalfDuplex(int com);
+DMPAPI(void) com_EnableFullDuplex(int com);
+//DMPAPI(void) com_EnableDebugMode(COMPort *port);
+//DMPAPI(void) com_DisableDebugMode(COMPort *port);
 
-/* only for USB device */
-DMPAPI(bool) com_Ready(COMPort *port);
-DMPAPI(Line_Coding *) com_GetLineCoding(COMPort *port);
-	// typedef struct {
-	//	   DWORD dwDTERate;
-	//	   BYTE  bCharFormat;
-	//	   BYTE  bParityType;
-	//	   BYTE  bDataBits;
-	// } Line_Coding;
-DMPAPI(void) com_SetSerialState(COMPort *port, unsigned short state);
-	//  Serial State Bitmap
-	//    7 - 15: reserved
-	//    6:  bOverRun    overrun error
-	//    5:  bParity     parity error
-	//    4:  bFraming    framing error
-	//    3:  bRingSignal RI
-	//    2:  bBreak      break reception
-	//    1:  bTxCarrier  DSR
-	//    0:  bRxCarrier  DCD
-DMPAPI(unsigned short) com_GetControlLineState(COMPort *port);
-
-/* only for CAN bus */
-DMPAPI(void) com_Reset(COMPort *port);
-DMPAPI(bool) com_AddIDFilter(COMPort *port, int index, int ext_id, unsigned long filter, unsigned long mask);
-DMPAPI(bool) com_GetIDFilter(COMPort *port, int index, int *ext_id, unsigned long *filter, unsigned long *mask);
-DMPAPI(bool) com_DelIDFilter(COMPort *port, int index);
-DMPAPI(void) com_ClearIDList(COMPort *port);
-DMPAPI(void) com_EnableBypass(COMPort *port);
-DMPAPI(void) com_DisableBypass(COMPort *port);
-DMPAPI(bool) com_SetEWLimit(COMPort *port, int ewl);
-DMPAPI(int)  com_GetEWLimit(COMPort *port);
-DMPAPI(int)  com_GetTxErrorCount(COMPort *port);
-DMPAPI(int)  com_GetRxErrorCount(COMPort *port);
-DMPAPI(void) com_EnableStoreError(COMPort *port);
-DMPAPI(void) com_DisableStoreError(COMPort *port);
-DMPAPI(void) com_SetCANBusOffHandler(COMPort *port, void (*func)(CAN_Bus *));
-DMPAPI(unsigned char)  com_GetNowState(COMPort *port);
-DMPAPI(unsigned char) com_PopError(COMPort *port);
-DMPAPI(unsigned char) com_GetLastError(COMPort *port);
-DMPAPI(bool) com_ReadCAN(COMPort *port, CANFrame*);
-DMPAPI(bool) com_WriteCAN(COMPort *port, CANFrame*);
+DMPAPI(void) com_EnableTurboMode(int com);
+DMPAPI(void) com_DisableTurboMode(int com);
+DMPAPI(bool) com_IsTurboMode(int com);
+DMPAPI(void) com_EnableFIFO32(int com);
+DMPAPI(void) com_DisableFIFO32(int com);
+DMPAPI(bool) com_IsFIFO32Mode(int com);
 
 #ifdef __cplusplus
 }

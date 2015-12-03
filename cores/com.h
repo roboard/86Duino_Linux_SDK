@@ -103,10 +103,10 @@ DMPAPI(bool) com_Init(int com);
 DMPAPI(void) com_Close(int com);
 
 DMPAPI(bool) com_SetBaud(int com, unsigned int bps);
-// for UART
-    #define COMBAUD_748800BPS       (0x8002)  // 57600 * 13 (invalid for RB-100)
-    #define COMBAUD_499200BPS       (0x8003)  // 38400 * 13 (invalid for RB-100)
-    #define COMBAUD_249600BPS       (0x8006)  // 19200 * 13 (invalid for RB-100)
+    // for UART
+    //#define COMBAUD_748800BPS       (0x8002)  // 57600 * 13 (invalid for RB-100)
+    //#define COMBAUD_499200BPS       (0x8003)  // 38400 * 13 (invalid for RB-100)
+    //#define COMBAUD_249600BPS       (0x8006)  // 19200 * 13 (invalid for RB-100)
     #define COMBAUD_115200BPS       (0x0001)
     #define COMBAUD_57600BPS        (0x0002)
     #define COMBAUD_38400BPS        (0x0003)

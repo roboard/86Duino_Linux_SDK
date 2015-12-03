@@ -277,8 +277,8 @@ DMPAPI(bool) com_Init(int com) {
     #endif
     
     com_SetFormat(com, BYTESIZE8|STOPBIT1|COM_NOPARITY);  // default data format: 8 bits, 1 stop bit, no parity
-    com_SetBaud(com, COMBAUD_115200BPS);                            // default baudrate: 115200 bps
-    com_EnableFIFO32(com);                                          // set Vortex86DX's UART FIFO as 32 bytes
+    com_SetBaud(com, COMBAUD_115200BPS);              // default baudrate: 115200 bps
+    // com_EnableFIFO32(com);                                                                  // default FIFO: 16
     return true;
 
 
@@ -409,18 +409,20 @@ DMPAPI(bool) com_SetFormat(int com, unsigned char format) {
 
 DMPAPI(bool) com_SetBaud(int com, unsigned int baudrate) {
     unsigned int baud = baudrate;
-
+    /*
     switch (baudrate)
     {
         case COMBAUD_748800BPS: baud = COMBAUD_57600BPS; break;
         case COMBAUD_499200BPS: baud = COMBAUD_38400BPS; break;
         case COMBAUD_249600BPS: baud = COMBAUD_19200BPS; break;
     }
-
+        */
     #if defined(DMP_MSVC_WIN32) || defined(DMP_MSVC_WINCE)
         {
         DWORD oldbaud = COM_info[com].newstate.BaudRate;
 
+        COM_info[com].newstate.BaudRate = 9600;
+        
         switch (baud)
         {
             case  COMBAUD_50BPS:     COM_info[com].newstate.BaudRate = 50;     break;
@@ -447,7 +449,7 @@ DMPAPI(bool) com_SetBaud(int com, unsigned int baudrate) {
         {
         speed_t oldospeed = cfgetospeed(&(COM_info[com].newstate));
         speed_t oldispeed = cfgetispeed(&(COM_info[com].newstate));
-        speed_t newspeed  = B50;
+        speed_t newspeed  = B9600; // default is 9600
 
         switch (baud)
         {
@@ -480,7 +482,7 @@ DMPAPI(bool) com_SetBaud(int com, unsigned int baudrate) {
         return false;
     #endif
     
-    if ((baudrate & 0x8000) != 0) com_EnableTurboMode(com); else com_DisableTurboMode(com);
+    // if ((baudrate & 0x8000) != 0) com_EnableTurboMode(com); else com_DisableTurboMode(com);
 
     return true;
 }
@@ -747,7 +749,7 @@ DMPAPI(bool) com_ClearWFIFO(int com) {
 }
 
 
-
+/*
 #ifdef ROBOIO
     DMPAPI(bool) com_ServoTRX(int com, unsigned char* cmd, int csize, unsigned char* buf, int bsize) {
         com_ClearRFIFO(com);
@@ -776,7 +778,7 @@ DMPAPI(bool) com_ClearWFIFO(int com) {
         return true;
     }
 #endif
-
+*/
 
 
 /*************************  Isolated COM lib Functions  ***********************/

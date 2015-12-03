@@ -24,15 +24,15 @@
 
 
 #define COM_TIMEOUT         (5000L)  // timeout = 5s
-static unsigned char  COM_ctrlREG[4]  = {0x00, 0x04, 0x08, 0x0C};  // SB UART-CTRL registers
+static unsigned char  COM_ctrlREG[6]  = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x14};  // SB UART-CTRL registers
 //static unsigned char  COM_addrREG[4]  = {0x54, 0xa0, 0xa4, 0xa8};  // SB UART-ADDR registers
 
 
 #if defined(DMP_MSVC_WIN32) || defined(DMP_MSVC_WINCE)
     #ifdef RB_MSVC_WINCE
-        static LPCTSTR COM_portname[4] = {_T("COM1:"), _T("COM2:"), _T("COM3:"), _T("COM4:")};
+        static LPCTSTR COM_portname[6] = {_T("COM1:"), _T("COM2:"), _T("COM3:"), _T("COM4:", _T("COM5:"), _T("COM6"))};
     #else
-        static LPCTSTR COM_portname[4] = {_T("\\\\.\\COM1"), _T("\\\\.\\COM2"), _T("\\\\.\\COM3"), _T("\\\\.\\COM4")};
+        static LPCTSTR COM_portname[6] = {_T("\\\\.\\COM1"), _T("\\\\.\\COM2"), _T("\\\\.\\COM3"), _T("\\\\.\\COM4", _T("\\\\.\\COM5"), _T("\\\\.\\COM6"))};
     #endif
     typedef struct com_port {
         HANDLE fp;
@@ -42,7 +42,7 @@ static unsigned char  COM_ctrlREG[4]  = {0x00, 0x04, 0x08, 0x0C};  // SB UART-CT
         COMMTIMEOUTS oldtimeouts;
     } COM_t;
 #elif defined(DMP_LINUX)
-    static char* COM_portname[4] = {"/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3"};
+    static char* COM_portname[6] = {"/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3", "/dev/ttyS4", "/dev/ttyS5"};
     typedef struct com_port {
         int fp;
         termios newstate;
@@ -53,12 +53,12 @@ static unsigned char  COM_ctrlREG[4]  = {0x00, 0x04, 0x08, 0x0C};  // SB UART-CT
     // TODO ...
     typedef int* COM_t;
 #endif
-static COM_t COM_info[4];
+static COM_t COM_info[6];
 
-static bool COM_oldTMode[4] = {false, false, false, false};  // old turbo-mode setting
-static bool COM_oldFMode[4] = {false, false, false, false};  // old FIFO32-mode setting
-static int  COM_duplex[4] = {COM_FDUPLEX, COM_FDUPLEX, COM_FDUPLEX, COM_FDUPLEX};  // duplex-mode stting
-static unsigned short COM_baseaddr[4] = {0x00, 0x00, 0x00, 0x00};  // I/O base address of each UART
+static bool COM_oldTMode[6] = {false, false, false, false, false, false};  // old turbo-mode setting
+static bool COM_oldFMode[6] = {false, false, false, false, false, false};  // old FIFO32-mode setting
+static int  COM_duplex[6] = {COM_FDUPLEX, COM_FDUPLEX, COM_FDUPLEX, COM_FDUPLEX, COM_FDUPLEX, COM_FDUPLEX};  // duplex-mode stting
+static unsigned short COM_baseaddr[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // I/O base address of each UART
 
 
 /****************************  Internal Functions  ****************************/
@@ -135,19 +135,19 @@ DMPAPI(void) com_EnableFullDuplex(int com) {
 /*-----------------------  end of Internal Functions  ------------------------*/
 
 
-static int COM_ioSection[4] = {-1, -1, -1, -1};
+static int COM_ioSection[6] = {-1, -1, -1, -1, -1, -1};
 DMPAPI(bool) com_InUse(int com) {
-    if((com < 0) || (com > 3)) return false;
+    if((com < 0) || (com > 5)) return false;
     if(COM_ioSection[com] != -1) return true; else return false;
 }
 
 DMPAPI(bool) com_Init(int com) {
     if (com_InUse(com) == true)
-	{
-        printf("COM%d was already opened", com);
-		return false;
-	}
-    
+    {
+	printf("COM%d was already opened", com);
+	return false;
+    }
+
     if((COM_ioSection[com] = io_Init()) == -1) return false;
 
     if(uart_isenabled(com) == false)
@@ -784,7 +784,7 @@ DMPAPI(bool) com_ClearWFIFO(int com) {
 /*************************  Isolated COM lib Functions  ***********************/
 DMPAPI(void) com_EnableTurboMode(int com) {
     unsigned short com_config_base;
-    if ((com < 0) || (com > 3)) return;
+    if ((com < 0) || (com > 5)) return;
 
     com_config_base = sb_Read16(0x60) & 0xfffe;
     sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) | (1L<<22));
@@ -792,7 +792,7 @@ DMPAPI(void) com_EnableTurboMode(int com) {
 
 DMPAPI(void) com_DisableTurboMode(int com) {
     unsigned short com_config_base;
-    if ((com < 0) || (com > 3)) return;
+    if ((com < 0) || (com > 5)) return;
 
     com_config_base = sb_Read16(0x60) & 0xfffe;
     sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) & ~(1L<<22));
@@ -800,7 +800,7 @@ DMPAPI(void) com_DisableTurboMode(int com) {
 
 DMPAPI(bool) com_IsTurboMode(int com) {
     unsigned short com_config_base;
-    if ((com < 0) || (com > 3)) return false;
+    if ((com < 0) || (com > 5)) return false;
 
     com_config_base = sb_Read16(0x60) & 0xfffe;
     if ((sb_Read(com_config_base + COM_ctrlREG[com]) & (1L<<22)) == 0L) return false;
@@ -809,7 +809,7 @@ DMPAPI(bool) com_IsTurboMode(int com) {
 
 DMPAPI(void) com_EnableFIFO32(int com) {
     unsigned short com_config_base;
-    if ((com < 0) || (com > 3)) return;
+    if ((com < 0) || (com > 5)) return;
 
     com_config_base = sb_Read16(0x60) & 0xfffe;
     sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) | (1L<<21));
@@ -817,7 +817,7 @@ DMPAPI(void) com_EnableFIFO32(int com) {
 
 DMPAPI(void) com_DisableFIFO32(int com) {
     unsigned short com_config_base;
-    if ((com < 0) || (com > 3)) return;
+    if ((com < 0) || (com > 5)) return;
 
     com_config_base = sb_Read16(0x60) & 0xfffe;
     sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) & ~(1L<<21));
@@ -825,7 +825,7 @@ DMPAPI(void) com_DisableFIFO32(int com) {
 
 DMPAPI(bool) com_IsFIFO32Mode(int com) {
     unsigned short com_config_base;
-    if ((com < 0) || (com > 3)) return false;
+    if ((com < 0) || (com > 5)) return false;
     
     com_config_base = sb_Read16(0x60) & 0xfffe;
     if ((sb_Read(com_config_base + COM_ctrlREG[com]) & (1L<<21)) == 0L) return false;

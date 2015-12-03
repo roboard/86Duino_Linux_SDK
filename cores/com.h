@@ -84,9 +84,10 @@ typedef struct
 #define COM2			   	(0x01)
 #define COM3			   	(0x02)
 #define COM4			   	(0x03)
+#define COM5                            (0x04)
+#define COM6                            (0x05)
+
 /*
-#define COM5			   	(0x04)
-#define COM6			   	(0x05)
 #define COM7			   	(0x06)
 #define COM8			   	(0x07)
 #define COM9			   	(0x08)

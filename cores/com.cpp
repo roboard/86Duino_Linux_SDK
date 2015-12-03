@@ -781,68 +781,52 @@ DMPAPI(bool) com_ClearWFIFO(int com) {
 
 /*************************  Isolated COM lib Functions  ***********************/
 DMPAPI(void) com_EnableTurboMode(int com) {
+    unsigned short com_config_base;
     if ((com < 0) || (com > 3)) return;
 
-    if (com == COM1)
-        sb_Write8(COM_ctrlREG[com], sb_Read8(COM_ctrlREG[com]) | ((unsigned char)1<<6));
-    else  // COM2 ~ COM4
-        sb_Write(COM_ctrlREG[com], sb_Read(COM_ctrlREG[com]) | (1L<<22));
+    com_config_base = sb_Read16(0x60) & 0xfffe;
+    sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) | (1L<<22));
 }
 
 DMPAPI(void) com_DisableTurboMode(int com) {
+    unsigned short com_config_base;
     if ((com < 0) || (com > 3)) return;
 
-    if (com == COM1)
-        sb_Write8(COM_ctrlREG[com], sb_Read8(COM_ctrlREG[com]) & ~((unsigned char)1<<6));
-    else  // COM2 ~ COM4
-        sb_Write(COM_ctrlREG[com], sb_Read(COM_ctrlREG[com]) & ~(1L<<22));
+    com_config_base = sb_Read16(0x60) & 0xfffe;
+    sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) & ~(1L<<22));
 }
 
 DMPAPI(bool) com_IsTurboMode(int com) {
+    unsigned short com_config_base;
     if ((com < 0) || (com > 3)) return false;
-    
-    if (com == COM1)
-    {
-        if ((sb_Read8(COM_ctrlREG[com]) & ((unsigned char)1<<6)) == 0) return false;
-    }
-    else
-    {
-        if ((sb_Read(COM_ctrlREG[com]) & (1L<<22)) == 0L) return false;
-    }
 
+    com_config_base = sb_Read16(0x60) & 0xfffe;
+    if ((sb_Read(com_config_base + COM_ctrlREG[com]) & (1L<<22)) == 0L) return false;
     return true;
 }
 
 DMPAPI(void) com_EnableFIFO32(int com) {
+    unsigned short com_config_base;
     if ((com < 0) || (com > 3)) return;
 
-    if (com == COM1)
-        sb_Write8(COM_ctrlREG[com], sb_Read8(COM_ctrlREG[com]) | ((unsigned char)1<<4));
-    else  // COM2 ~ COM4
-        sb_Write(COM_ctrlREG[com], sb_Read(COM_ctrlREG[com]) | (1L<<21));
+    com_config_base = sb_Read16(0x60) & 0xfffe;
+    sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) | (1L<<21));
 }
 
 DMPAPI(void) com_DisableFIFO32(int com) {
+    unsigned short com_config_base;
     if ((com < 0) || (com > 3)) return;
 
-    if (com == COM1)
-        sb_Write8(COM_ctrlREG[com], sb_Read8(COM_ctrlREG[com]) & ~((unsigned char)1<<4));
-    else  // COM2 ~ COM4
-        sb_Write(COM_ctrlREG[com], sb_Read(COM_ctrlREG[com]) & ~(1L<<21));
+    com_config_base = sb_Read16(0x60) & 0xfffe;
+    sb_Write(com_config_base + COM_ctrlREG[com], sb_Read(com_config_base + COM_ctrlREG[com]) & ~(1L<<21));
 }
 
 DMPAPI(bool) com_IsFIFO32Mode(int com) {
+    unsigned short com_config_base;
     if ((com < 0) || (com > 3)) return false;
     
-    if (com == COM1)
-    {
-        if ((sb_Read8(COM_ctrlREG[com]) & ((unsigned char)1<<4)) == 0) return false;
-    }
-    else
-    {
-        if ((sb_Read(COM_ctrlREG[com]) & (1L<<21)) == 0L) return false;
-    }
-
+    com_config_base = sb_Read16(0x60) & 0xfffe;
+    if ((sb_Read(com_config_base + COM_ctrlREG[com]) & (1L<<21)) == 0L) return false;
     return true;
 }
 /*--------------------  end of Isolated COM lib Functions  -------------------*/

@@ -1,18 +1,27 @@
-#include <Arduino.h>
+#include "dmpcfg.h"
+#include "Arduino.h"
+#include "mcm.h"
+
+#if defined (DMP_LINUX)
 #include <pthread.h>
 #include "OSAbstract.h"
-#include "mcm.h"
+#elif defined (DMP_DOS_DJGPP)
+#include "irq.h"
+#include <stdio.h>
+#endif
 
 #define MCPFAU_CAP_LEVEL0 (0x08L << 16)
 #define MCPFAU_CAP_LEVEL1 (0x09L << 16)
-#define INTERRUPTS 13
 
+#if defined (DMP_LINUX)
+
+#define INTERRUPTS 13
 #if defined(__86DUINO_ZERO)
-    #define MAX_INTR_NUM 2
+#define MAX_INTR_NUM 2
 #elif defined(__86DUINO_EDUCAKE)
-    #define MAX_INTR_NUM 5
+#define MAX_INTR_NUM 5
 #else
-    #define MAX_INTR_NUM 11
+#define MAX_INTR_NUM 11
 #endif
 
 struct interrupt {
@@ -29,6 +38,31 @@ struct interrupt_desc {
 	struct interrupt intr[INTERRUPTS];
 };
 
+static interrupt_desc idc;
+bool do_callback[INTERRUPTS] = {0};
+
+#elif defined(DMP_DOS_DJGPP)
+
+static int mc = 0, md = 1;
+static int mcint_offset[2] = {0, 24};
+static uint8_t used_irq = 0xff;
+static char* name = "attachInt";
+static void clear_INTSTATUS(void) {
+    mc_outp(mc, 0x04, 0xffL << mcint_offset[md]); //for EX
+}
+
+static void disable_MCINT(void) {
+    mc_outp(mc, 0x00, mc_inp(mc, 0x00) & ~(0xffL << mcint_offset[md]));  // disable mc interrupt
+    mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) | (1L << mc));
+}
+
+static void enable_MCINT(unsigned long used_int) {
+	mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) & ~(1L << mc));
+	mc_outp(mc, 0x00, (mc_inp(mc, 0x00) & ~(0xffL<<mcint_offset[md])) | (used_int << mcint_offset[md]));
+}
+
+#endif
+
 static void (*sifIntMode[3])(int, int, unsigned long) = {mcpfau_SetCapMode1, mcpfau_SetCapMode2, mcpfau_SetCapMode3}; 
 static void (*sifSetPol[3])(int, int, unsigned long) = {mcpfau_SetPolarity1, mcpfau_SetPolarity2, mcpfau_SetPolarity3}; 
 static void (*sifSetRelease[3])(int, int, unsigned long) = {mcpfau_SetFAU1RELS, mcpfau_SetFAU2RELS, mcpfau_SetFAU3RELS}; 
@@ -37,10 +71,9 @@ static void (*sifSetMask[3])(int, int, unsigned long) = {mcpfau_SetMask1, mcpfau
 static unsigned long (*readCapStat[3])(int, int) = {mcpfau_ReadCAPSTAT1, mcpfau_ReadCAPSTAT2, mcpfau_ReadCAPSTAT3};
 static unsigned long (*readCapFIFO[3])(int, int, unsigned long*) = {mcpfau_ReadCAPFIFO1, mcpfau_ReadCAPFIFO2, mcpfau_ReadCAPFIFO3};
 static volatile bool mcm_init[4] = {false, false, false, false};
+static unsigned long _usedMode[4][3];
 
-static interrupt_desc idc;
-bool do_callback[INTERRUPTS] = {0};
-
+#if defined (DMP_LINUX)
 void* intrMain(void* pargs)
 {
 	unsigned long capdata;
@@ -108,6 +141,73 @@ void* intrMain(void* pargs)
 	}
     pthread_exit(NULL);
 }
+#endif
+
+#if defined (DMP_DOS_DJGPP)
+static int user_int(int irq, void* data) {
+	int i, m, n, evt = 0;
+	unsigned long capdata;
+	
+	// detect interrupt pin
+	for(i=0; i<EXTERNAL_NUM_INTERRUPTS; i++)
+	{
+		m = i/3; // sif mc
+		n = i%3; // offset (capture pin number 1/2/3)
+		if(mcm_init[m] == false) {i += 2; continue;}
+		if((mc_inp(m, 0x04) & ((0x20000000L)<<n)) != 0L) // detect input edge-trigger
+		{
+			mc_outp(m, 0x04, (0x20000000L)<<n);
+			break;
+		}
+		
+		if((mc_inp(m, 0x04) & ((0x04000000L)<<n)) != 0L) // detect input level-trigger
+		{
+			mc_outp(m, 0x04, (0x04000000L)<<n);
+			break;
+		}
+	}
+	
+	// execute user function for the pin
+	if(i < EXTERNAL_NUM_INTERRUPTS)
+	{
+		switch(_usedMode[m][n])
+		{
+		case MCPFAU_CAP_LEVEL0: case MCPFAU_CAP_LEVEL1:
+			sifSetMask[n](m, MCSIF_MODULEB, MCPFAU_MASK_INACTIVE);
+			sifClearStat[n](m, MCSIF_MODULEB);
+			evt++;
+			break;
+		case MCPFAU_CAP_BOTH:
+	    	while(readCapStat[n](m, MCSIF_MODULEB)!= MCENC_CAPFIFO_EMPTY)
+          		if(readCapFIFO[n](m, MCSIF_MODULEB, &capdata) != MCPFAU_CAP_CAPCNT_OVERFLOW) evt++;
+			break;
+		case MCPFAU_CAP_1TO0:
+			while(readCapStat[n](m, MCSIF_MODULEB)!= MCENC_CAPFIFO_EMPTY)
+          		if(readCapFIFO[n](m, MCSIF_MODULEB, &capdata) == MCPFAU_CAP_1TO0EDGE) evt++;
+          	break;
+		case MCPFAU_CAP_0TO1:
+			while(readCapStat[n](m, MCSIF_MODULEB)!= MCENC_CAPFIFO_EMPTY)
+          		if(readCapFIFO[n](m, MCSIF_MODULEB, &capdata) == MCPFAU_CAP_0TO1EDGE) evt++;
+          	break;
+		}
+		
+		// do user's function
+		for(; evt > 0; evt--)
+			_userfunc[i]();
+		
+		// if select level-trigger, switch the MASK to "NONE" after user's function is complete.
+		switch(_usedMode[m][n])
+		{
+		case MCPFAU_CAP_LEVEL0: case MCPFAU_CAP_LEVEL1:
+			sifSetMask[n](m, MCSIF_MODULEB, MCPFAU_MASK_NONE);
+			break;
+		default: break;
+		}
+	}
+	if(i == EXTERNAL_NUM_INTERRUPTS) return ISR_NONE;
+	return ISR_HANDLED;
+}
+#endif
 
 static void mcmsif_init(int32_t mc)
 {	
@@ -145,10 +245,16 @@ static void mcmsif_init(int32_t mc)
     mcpfau_SetRLDTRIG3(mc, MCSIF_MODULEB, MCPFAU_RLDTRIG_DISABLE);          
 	mcpfau_SetFAU3TRIG(mc, MCSIF_MODULEB, MCPFAU_FAUTRIG_INPUT1);
 	mcpfau_SetFAU3RELS(mc, MCSIF_MODULEB, MCPFAU_FAURELS_INPUT0);
-	
+	#if defined (DMP_DOS_DJGPP)
+	io_DisableINT();
+	#endif
 	mcm_init[mc] = true;
+	#if defined (DMP_DOS_DJGPP)
+	io_RestoreINT();
+	#endif
 }
 
+#if defined (DMP_LINUX)
 static int addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, uint32_t timeout)
 {
 	pthread_spin_lock(&idc.spinlock);
@@ -205,9 +311,34 @@ static int addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, u
 	
 	pthread_spin_unlock(&idc.spinlock);
 }
+#endif
+
+int interrupt_init(void)
+{
+	#if defined (DMP_LINUX)
+    pthread_spin_init(&idc.spinlock, 0);
+    for(int i = 0; i < INTERRUPTS; i++)
+		idc.intr[i].used = false;
+    int err = pthread_create(&idc.thread, NULL, intrMain, NULL);
+	if(err != 0)
+		printf("failed to create the thread\n");
+	return 0;
+	#elif defined (DMP_DOS_DJGPP)
+	if(used_irq != 0xff) return 0;
+    
+    if(irq_InstallISR(GetMCIRQ(), user_int, (void*)name) == false)
+	{
+	    printf("irq_install fail\n"); return -1;
+	}
+	
+	used_irq = GetMCIRQ();
+	return 0;
+	#endif
+}
 
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode)
 {
+	#if defined (DMP_LINUX)
     if( mode < 0 || mode > 4 )
     {
         printf("Not support this mode\n");
@@ -227,16 +358,109 @@ void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode)
 	}
 
     addIRQEntry(interruptNum, userFunc, mode, 0);
+	#elif defined (DMP_DOS_DJGPP)
+	int i;
+	unsigned short crossbar_ioaddr;
+	
+	if(interruptNum >= EXTERNAL_NUM_INTERRUPTS)
+	{
+		printf("This interrupt%d has no one pin to use\n", interruptNum);
+		return;
+	}
+    mc = interruptNum/3;
+    md = MCSIF_MODULEB;
+    
+    if(_userfunc[interruptNum] != NULL) return;
+	if(interrupt_init() == -1) return;
+	mcmsif_init(mc);
+	
+    clear_INTSTATUS();
+	enable_MCINT(0xfc); // SIFB FAULT INT3/2/1 + STAT3/2/1 = 6 bits
+	
+	crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
+    if (mc == 0)
+		io_outpb(crossbar_ioaddr + 2, 0x01); // GPIO port2: 0A, 0B, 0C, 3A
+	else if (mc == 1)
+    	io_outpb(crossbar_ioaddr + 3, 0x02); // GPIO port3: 1A, 1B, 1C, 3B
+	else if(mc == 2)
+		io_outpb(crossbar_ioaddr, 0x03); // GPIO port0: 2A, 2B, 2C, 3C
+	else if(mc == 3)
+	{
+		io_outpb(crossbar_ioaddr + 2, 0x01);
+		io_outpb(crossbar_ioaddr + 3, 0x02);
+		io_outpb(crossbar_ioaddr, 0x03);
+	}
+	
+	mcsif_Disable(mc, md);
+
+	io_DisableINT();
+	_userfunc[interruptNum] = userFunc;
+	io_RestoreINT();
+	
+	switch (mode) 
+	{
+	case LOW:
+		sifSetPol[interruptNum%3](mc, md, MCPFAU_POL_INVERSE);
+		sifSetMask[interruptNum%3](mc, md, MCPFAU_MASK_INACTIVE);
+		sifSetRelease[interruptNum%3](mc, md, MCPFAU_FAURELS_FSTAT0);
+		sifClearStat[interruptNum%3](mc, md);
+		_usedMode[mc][interruptNum%3] = MCPFAU_CAP_LEVEL0;
+		clear_INTSTATUS();
+		break;
+	case HIGH:
+		sifSetMask[interruptNum%3](mc, md, MCPFAU_MASK_INACTIVE);
+		sifSetRelease[interruptNum%3](mc, md, MCPFAU_FAURELS_FSTAT0);
+		sifClearStat[interruptNum%3](mc, md);
+		_usedMode[mc][interruptNum%3] = MCPFAU_CAP_LEVEL1;
+		clear_INTSTATUS();
+		break;
+	case CHANGE:
+		sifIntMode[interruptNum%3](mc, md, MCPFAU_CAP_BOTH);
+		_usedMode[mc][interruptNum%3] = MCPFAU_CAP_BOTH;
+		break;
+	case FALLING:
+		sifIntMode[interruptNum%3](mc, md, MCPFAU_CAP_1TO0);
+		_usedMode[mc][interruptNum%3] = MCPFAU_CAP_1TO0;
+		break;	
+	case RISING:
+	    sifIntMode[interruptNum%3](mc, md, MCPFAU_CAP_0TO1);
+	    _usedMode[mc][interruptNum%3] = MCPFAU_CAP_0TO1;
+	    break;
+	default:
+		printf("No support this mode\n");
+		return;
+	}
+	
+	// switch crossbar to MCM_SIF_PIN
+	io_outpb(crossbar_ioaddr + 0x90 + pin_offset[interruptNum], 0x08);//RICH IO
+	mcsif_Enable(mc, md);
+	
+	// If select level-trigger, switch the MASK to "NONE" after sif is enabled.
+	switch (mode)
+	{
+	case LOW: case HIGH:
+		sifSetMask[interruptNum%3](mc, md, MCPFAU_MASK_NONE);
+		break;
+	default: break;
+	}
+	#endif
 }
 
 static void mcmsif_close(int32_t mc)
 {
 	mcsif_Disable(mc, MCSIF_MODULEB);
+	#if defined (DMP_DOS_DJGPP)
+	io_DisableINT();
+	#endif
 	mcm_init[mc] = false;
+	#if defined (DMP_DOS_DJGPP)
+	io_RestoreINT();
+	#endif
 }
 
 void detachInterrupt(uint8_t interruptNum)
 {
+	#if defined (DMP_LINUX)
 	if(interruptNum > MAX_INTR_NUM + 1)
 		return;
 
@@ -248,8 +472,37 @@ void detachInterrupt(uint8_t interruptNum)
 		mcmsif_close(mc);
 	unLockMCMSIF();
 	pthread_spin_unlock(&idc.spinlock);
+	#elif defined (DMP_DOS_DJGPP)
+	int i;
+	mc = interruptNum/3;
+	
+	if(interruptNum >= EXTERNAL_NUM_INTERRUPTS) return;
+	if(_userfunc[interruptNum] == NULL) return;
+	
+	mcsif_Disable(mc, md);
+	sifIntMode[interruptNum%3](mc, md, MCPFAU_CAP_DISABLE);
+	
+	io_DisableINT();
+	_userfunc[interruptNum] = NULL;
+	io_RestoreINT();
+	
+	for(i=0; i<3; i++)
+		if(_userfunc[mc*3+i] != NULL) break;
+	if(i == 3) mcmsif_close(mc); else mcsif_Enable(mc, md);
+	
+	for(i=0; i<EXTERNAL_NUM_INTERRUPTS; i++)
+		if(_userfunc[i] != NULL) break;
+	if(i == EXTERNAL_NUM_INTERRUPTS)
+	{
+		if(irq_UninstallISR(used_irq, (void*)name) == false)
+		    printf("irq_install fail\n");
+		else
+			used_irq = 0xff;
+	}
+	#endif
 }
 
+#if defined (DMP_LINUX)
 void attachTimerInterrupt(uint8_t interruptNum, void (*callback)(void), uint32_t microseconds)
 {
     if(interruptNum != 12)
@@ -261,14 +514,4 @@ void detachTimerInterrupt(void)
 {
 	detachInterrupt(12);
 }
-
-int interrupt_init(void)
-{
-    pthread_spin_init(&idc.spinlock, 0);
-    for(int i = 0; i < INTERRUPTS; i++)
-		idc.intr[i].used = false;
-    int err = pthread_create(&idc.thread, NULL, intrMain, NULL);
-	if(err != 0)
-		printf("failed to create the thread\n");
-	return 0;
-}
+#endif

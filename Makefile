@@ -1,5 +1,5 @@
 IFLAGS    = -I./cores
-OBJFILES  = io.o irq.o err.o wiring_digital.o wiring_analog.o mcm.o wiring_pulse.o wiring_shift.o wdt.o main.o wiring.o WMath.o WString.o Stream.o Print.o vortex86.o queue.o IPAddress.o i2c.o i2cex.o OSAbstract.o interrupt.o
+OBJFILES  = io.o irq.o err.o wiring_digital.o wiring_analog.o mcm.o wiring_pulse.o wiring_shift.o wdt.o main.o wiring.o WMath.o WString.o Stream.o Print.o vortex86.o queue.o IPAddress.o i2c.o i2cex.o OSAbstract.o WInterrupts.o
 SRCFILES  = 86Duino.o
 EXEFILES  = 86Duino
 LIBFILES  = -lstdc++ -lrt -lpthread

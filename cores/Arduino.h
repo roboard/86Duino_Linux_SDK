@@ -155,6 +155,7 @@ extern bool Global_irq_Init;
 //extern bool timer1_pin32_isUsed; // defined in tone.cpp
 extern unsigned long CLOCKS_PER_MICROSEC;
 extern unsigned long VORTEX86EX_CLOCKS_PER_MS;
+#define Serial      Serial1
 #define Serial4    Serial485
 #define Serial6    Serial232
 #include "WCharacter.h"

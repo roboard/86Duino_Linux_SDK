@@ -21,10 +21,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef ethernet_h
 #define ethernet_h
 
+#define MAX_SOCK_NUM 0x20
+
+#include "utility/SwsSock.h"
+
+#if defined (DMP_LINUX)
 #include <sys/types.h>
 #include <ifaddrs.h>
-
-#include <inttypes.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -49,17 +52,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <linux/if_ether.h>
 #endif
 
+#endif
+
+#include <inttypes.h>
+#include <Arduino.h>
 #include "IPAddress.h"
 #include "EthernetClient.h"
 #include "EthernetServer.h"
 #include "Dhcp.h"
 
-#define MAX_SOCK_NUM 0x20
-
 class EthernetClass {
 private:
+#if defined (DMP_LINUX)
 	IPAddress _dnsServerAddress;
-	//DhcpClass* _dhcp;
 	IPAddress _local_ip;
 	IPAddress _dns_server;
 	IPAddress _gateway;
@@ -67,9 +72,19 @@ private:
 
 	struct	ifreq ifr;
 	int if_sock;
+#elif defined (DMP_DOS_DJGPP)
+	DhcpClass* _dhcp;
+#endif
 public:
+#if defined (DMP_LINUX)
 	static uint8_t _state[MAX_SOCK_NUM];
 	static uint16_t _server_port[MAX_SOCK_NUM];
+	EthernetClass();
+#elif defined (DMP_DOS_DJGPP)
+	static uint8_t MAC_address[6];
+    uint8_t *localMAC();
+	int begin(void);
+#endif
 	// Initialise the Ethernet shield to use the provided MAC address and gain the rest of the
 	// configuration through DHCP.
 	// Returns 0 if the DHCP configuration failed, and 1 if it succeeded
@@ -81,7 +96,6 @@ public:
 	void begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
 	int maintain();
 
-	EthernetClass();
 	IPAddress localIP();
 	IPAddress subnetMask();
 	IPAddress gatewayIP();

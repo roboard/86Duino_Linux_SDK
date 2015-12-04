@@ -20,19 +20,22 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #ifndef ethernetclient_h
 #define ethernetclient_h
+#include "utility/SwsSock.h"
 #include "Arduino.h"
 #include "Print.h"
 #include "Client.h"
 #include "IPAddress.h"
+#if defined (DMP_LINUX)
 #include "EthernetServer.h"
+#endif
+
+#define BUFFER_SIZE (512)
 
 class EthernetClient : public Client {
 
 #define CLIENT_MAX_INACTIVITY_RETRIES 100000
 public:
 	EthernetClient();
-	EthernetClient(uint8_t sock);
-
 	uint8_t status();
 	virtual int connect(IPAddress ip, uint16_t port);
 	virtual int connect(const char *host, uint16_t port);
@@ -51,14 +54,30 @@ public:
 
 	using Print::write;
 
+#if defined (DMP_LINUX)
+	EthernetClient(uint8_t sock);
 	int _sock;
 	int *_inactive_counter;
 	class EthernetServer * _pCloseServer;
 	bool connect_true;
 	int id;
+#elif defined (DMP_DOS_DJGPP)
+	virtual int writeNB(uint8_t);
+	virtual int writeNB(const uint8_t *buf, size_t size);
+	class EthernetServer *pServer;
+#endif
+	
 private:
+#if defined (DMP_LINUX)
 	static uint16_t _srcport;
 	struct sockaddr_in _sin;
+#elif defined (DMP_DOS_DJGPP)
+	struct SwsSockInfo *sws;
+	EthernetClient(struct SwsSockInfo *info);
+	int _id;
+	uint8_t _RegBuf;
+	uint8_t _RegLen;
+#endif
 };
 
 #endif

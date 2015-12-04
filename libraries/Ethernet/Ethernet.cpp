@@ -20,6 +20,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "Ethernet.h"
 #include "Dhcp.h"
+#if defined (DMP_DOS_DJGPP)
+#include "io.h"
+#endif
 
 #define MY_TRACE_PREFIX "EthernetClass"
 
@@ -29,6 +32,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 // XXX: don't make assumptions about the value of MAX_SOCK_NUM.
+#if defined (DMP_LINUX)
 uint8_t EthernetClass::_state[MAX_SOCK_NUM] = {
   0, 0, 0, 0 };
 uint16_t EthernetClass::_server_port[MAX_SOCK_NUM] = {
@@ -36,33 +40,89 @@ uint16_t EthernetClass::_server_port[MAX_SOCK_NUM] = {
 
 EthernetClass::EthernetClass()
 {
-
 }
+#elif defined (DMP_DOS_DJGPP)
+uint8_t EthernetClass::MAC_address[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+uint8_t *EthernetClass::localMAC()
+{
+	int i;
+	void *mac_io;
+	
+	if (io_Init() == false)
+		;
+	else if ((mac_io = io_Alloc(IO_USE_MMIO, 0xFFFFFFB0UL, 0x06UL)) == NULL)
+		io_Close();
+	else {
+		for (i = 0; i < 6; i++) MAC_address[i] = io_In8(mac_io, i);
+		io_Free(mac_io);
+		io_Close();
+	}
+	return &MAC_address[0];
+}
+
+int EthernetClass::begin(void)
+{
+	static DhcpClass s_dhcp;
+	int ret;
+
+	_dhcp = &s_dhcp;
+	
+	// Now try to get our config info from a DHCP server
+	ret = _dhcp->beginWithDHCP();
+	if(ret == 1)
+	{
+		// We've successfully found a DHCP server and got our configuration info, so set things
+		// accordingly
+		SwsSock.setIPAddress(_dhcp->getLocalIp().raw_address());
+		SwsSock.setGatewayIp(_dhcp->getGatewayIp().raw_address());
+		SwsSock.setSubnetMask(_dhcp->getSubnetMask().raw_address());
+		SwsSock.setDnsServerIp(_dhcp->getDnsServerIp().raw_address());
+	}
+
+	return ret;
+}
+#endif
 
 int EthernetClass::begin(uint8_t *mac_address)
 {
+#if defined (DMP_LINUX)
 	// In this release - we require the DHCP server to have run and successfully assigned an IP - and we ignore the MAC parameter since this parameter
 	// is loaded by the Linux driver by default
 	return 1;
+#elif defined (DMP_DOS_DJGPP)
+	return begin();
+#endif
 }
 
 void EthernetClass::begin(uint8_t *mac_address, IPAddress local_ip)
 {
+#if defined (DMP_LINUX)
 	// Assume the DNS server will be the machine on the same network as the local IP
 	// but with last octet being '1'
 	IPAddress dns_server = local_ip;
 	//dns_server[3] = 1;
 	begin(mac_address, local_ip, dns_server);
-
+#elif defined (DMP_DOS_DJGPP)
+	IPAddress dns_server = local_ip;
+	dns_server[3] = 1;
+	begin(mac_address, local_ip, dns_server);
+#endif
 }
 
 void EthernetClass::begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server)
 {
+#if defined (DMP_LINUX)
 	// Assume the gateway will be the machine on the same network as the local IP
 	// but with last octet being '1'
 	IPAddress gateway = local_ip;
 	//gateway[3] = 1;
 	begin(mac_address, local_ip, dns_server, gateway);
+#elif defined (DMP_DOS_DJGPP)
+	IPAddress gateway = local_ip;
+	gateway[3] = 1;
+	begin(mac_address, local_ip, dns_server, gateway);
+#endif
 }
 
 void EthernetClass::begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server, IPAddress gateway)
@@ -73,6 +133,7 @@ void EthernetClass::begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dn
 
 void EthernetClass::begin(uint8_t *mac, IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet)
 {
+#if defined (DMP_LINUX)
 	struct ifreq ifr;
 	struct sockaddr_in sin;
 	int fd;
@@ -147,6 +208,13 @@ void EthernetClass::begin(uint8_t *mac, IPAddress local_ip, IPAddress dns_server
 	}
 
         close(fd);
+#elif defined (DMP_DOS_DJGPP)
+	SwsSock.setIPAddress(local_ip._address);
+	SwsSock.setDnsServerIp(dns_server._address);
+	SwsSock.setGatewayIp(gateway._address);
+	SwsSock.setSubnetMask(subnet._address);
+	SwsSock.init();
+#endif
 }
 
 int EthernetClass::maintain()
@@ -183,6 +251,7 @@ int EthernetClass::maintain()
 
 IPAddress EthernetClass::localIP()
 {
+#if defined (DMP_LINUX)
 	IPAddress ret;
 	struct ifaddrs *ifaddr = NULL, *ifa = NULL;
 	int family, s;
@@ -215,10 +284,16 @@ IPAddress EthernetClass::localIP()
 	freeifaddrs(ifaddr);
 
 	return ret;
+#elif defined (DMP_DOS_DJGPP)
+	IPAddress ret;
+	SwsSock.getIPAddress(ret.raw_address());
+	return ret;
+#endif
 }
 
 IPAddress EthernetClass::subnetMask()
 {
+#if defined (DMP_LINUX)
 	IPAddress ret;
 	struct ifaddrs *ifaddr = NULL, *ifa = NULL;
 	int family, s;
@@ -250,17 +325,34 @@ IPAddress EthernetClass::subnetMask()
 	}
 	freeifaddrs(ifaddr);
 	return ret;
+#elif defined (DMP_DOS_DJGPP)
+	IPAddress ret;
+	SwsSock.getSubnetMask(ret.raw_address());
+	return ret;
+#endif
 }
 
 IPAddress EthernetClass::gatewayIP()
 {
+#if defined (DMP_LINUX)
 	IPAddress ret;
 	return ret;
+#elif defined (DMP_DOS_DJGPP)
+	IPAddress ret;
+	SwsSock.getGatewayIp(ret.raw_address());
+	return ret;
+#endif
 }
 
 IPAddress EthernetClass::dnsServerIP()
 {
+#if defined (DMP_LINUX)
 	return _dnsServerAddress;
+#elif defined (DMP_DOS_DJGPP)
+	IPAddress ret;
+	SwsSock.getDnsServerIp(ret.raw_address());
+	return ret;
+#endif
 }
 
 EthernetClass Ethernet;

@@ -1,13 +1,13 @@
 IFLAGS    = -I./cores
-OBJFILES  = io.o irq.o err.o wiring_digital.o wiring_analog.o mcm.o wiring_pulse.o wiring_shift.o wdt.o main.o wiring.o WMath.o WString.o Stream.o Print.o vortex86.o queue.o IPAddress.o i2c.o i2cex.o OSAbstract.o WInterrupts.o
+OBJFILES  = io.o irq.o err.o wiring_digital.o wiring_analog.o mcm.o wiring_pulse.o wiring_shift.o wdt.o main.o wiring.o WMath.o WString.o Stream.o Print.o vortex86.o queue.o IPAddress.o i2c.o i2cex.o OSAbstract.o WInterrupts.o HardwareSerial.o com.o tone.o
 SRCFILES  = 86Duino.o
 EXEFILES  = 86Duino
 LIBFILES  = -lstdc++ -lrt -lpthread
 OPTIONS   = -Wno-write-strings -trigraphs
 CXX = gcc
 
-THIRD_LIB_NAME    = Ethernet
-THIRD_LIB_TARGET  = Dhcp Dns Ethernet EthernetClient EthernetServer EthernetUdp
+THIRD_LIB_NAME    = Ethernet#Rosserial86#TimerOne
+THIRD_LIB_TARGET  = Dhcp Dns Ethernet EthernetClient EthernetServer EthernetUdp#86DuinoHardware time#TimerOne
 THIRD_LIB_INCLUDE = $(addprefix -I./libraries/,$(THIRD_LIB_NAME))
 THIRD_LIB_PATH    = libraries/$(THIRD_LIB_NAME)
 THIRD_OBJ         = $(addsuffix .o,$(THIRD_LIB_TARGET))

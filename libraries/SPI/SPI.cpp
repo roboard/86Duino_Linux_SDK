@@ -12,8 +12,10 @@
  */
 
 #include "SPI.h"
+#include <pthread.h>
 
 SPIClass SPI;
+pthread_spinlock_t internal_lock;
 
 uint8_t SPIClass::initialized = 0;
 uint8_t SPIClass::interruptMode = 0;
@@ -37,59 +39,17 @@ int __clockDiv = 64, __bitOrder = MSBFIRST, __dataMode = SPI_MODE0;
 #define SPI_OFIFOEMPTY    (0x08)
 #define SPI_IFIFOFULL     (0x04)
 
-static void useFIFO(void) {
-	if(SPI_IOaddr == 0) return;
-	lockSPI();
-	io_outpb(SPI_IOaddr + 2, io_inpb(SPI_IOaddr + 2) | 0x10);
-	unLockSPI();
-}
-
-uint8_t ReadStateR(void) {
-	unsigned char val;
-	if(SPI_IOaddr == 0) return 0;
-	lockSPI();
-	val = io_inpb(SPI_IOaddr + 3);
-	unLockSPI();
-	return val;
-}
-
-void SPIClass::setSS(uint8_t data) {
-	SPICS(data);
-}
-
-void SPIClass::SPICS(uint8_t data) {
-	if(SPI_IOaddr == 0) return;
-	lockSPI();
-	if(data != 0)
-		io_outpb(SPI_IOaddr + 4, 0x01);
-	else
-		io_outpb(SPI_IOaddr + 4, 0x00);
-	unLockSPI();
-}
-
-// skip SPI_IOaddr + 5
-void WriteCLKDIVR(uint8_t data) {
-	if(SPI_IOaddr == 0) return;
-	lockSPI();
-	io_outpb(SPI_IOaddr + 6, data);
-	unLockSPI();
-}
-
-void Reset(void) {
+static void Reset(void) {
     if(SPI_IOaddr == 0) return;
-	lockSPI();
 	io_outpb(SPI_IOaddr + 7, 0x01);
-    for(int i; i<20; i++) io_inpb(SPI_IOaddr + 7);
-	if(io_inpb(SPI_IOaddr + 7) != 0) printf("SPI reset fail\n");
+    for(int i=0; i<20; i++) io_inpb(SPI_IOaddr + 7);
+	if((io_inpb(SPI_IOaddr + 7)&0x01) != 0) printf("SPI reset fail\n");
 	//while((io_inpb(SPI_IOaddr + 7)&0x01) != 0); // wait SPI reset for complete
-	unLockSPI();
 }
 
-void WriteCTRR(uint8_t data) {
+static void WriteCTRR(uint8_t data) {
 	if(SPI_IOaddr == 0) return;
-	lockSPI();
 	io_outpb(SPI_IOaddr + 7, io_inpb(SPI_IOaddr + 7) | data);
-	unLockSPI();
 }
 
 void SPIClass::begin()
@@ -98,31 +58,32 @@ void SPIClass::begin()
     void *pciDev = NULL;
 
 	// Get SPI device base address
-	lockSPI();
 	pciDev = pci_Alloc(0x00, 0x10, 0x01); // PCI SPI configuration space
 	if(pciDev == NULL) {printf("SPI device don't exist\n"); unLockSPI(); return;}
 	SPI_IOaddr = (unsigned)(pci_In16(pciDev, 0x10) & 0xFFFFFFF0L); // get SPI base address
 	#if defined DEBUG_MODE
-	printf("SPI base address = %04X\n", SPI_IOaddr);
+		printf("SPI base address = %04X\n", SPI_IOaddr);
 	#endif
 	pci_Free(pciDev);
 
+	lockSPI();
     WriteCTRR(FULLDUPEX + SPI_MODE0 + RESET);
-
 	io_outpb(SPI_IOaddr + 7, FULLDUPEX); // full-dupex
 	io_outpb(SPI_IOaddr + 7, io_inpb(SPI_IOaddr + 7) & 0xF1 | SPI_MODE0); // set mode
 	io_outpb(SPI_IOaddr + 0x0b, 0x08); // delay clk between two transfers
-    //SOURCE clock/(2 * SPI_CLOCK_DIV)
-	setClockDivider(13); // 100/(2*13) ~= 4MHz
-	useFIFO();
-	detachInterrupt();
-
 	io_outpb(SPI_IOaddr + 4, 0x01); // set CS = high
+	io_outpb(SPI_IOaddr + 2, io_inpb(SPI_IOaddr + 2) | 0x10); // use FIFO
+	unLockSPI();
+	
+	//SOURCE clock/(2 * SPI_CLOCK_DIV)
+	setClockDivider(13); // 100/(2*13) ~= 4MHz
+	detachInterrupt();
 
 	// Set SS to high so a connected chip will be "deselected" by default
 	pinMode(SS, OUTPUT);
 	digitalWrite(SS, HIGH);
-	unLockSPI();
+	
+	pthread_spin_init(&internal_lock, PTHREAD_PROCESS_SHARED);
   }
   initialized++; // reference count
 }
@@ -181,13 +142,17 @@ void SPIClass::end() {
 void SPIClass::usingInterrupt(uint8_t interruptNumber)
 {
   if(interruptNumber > 63) return;
+  pthread_spin_lock(&internal_lock);
   interrupt_flag |= (1LL<<interruptNumber);
+  pthread_spin_unlock(&internal_lock);
 }
 
 void SPIClass::notUsingInterrupt(uint8_t interruptNumber)
 {
   if(interruptNumber > 63) return;
+  pthread_spin_lock(&internal_lock);
   interrupt_flag &= ~(1LL<<interruptNumber);
+  pthread_spin_unlock(&internal_lock);
 }
 
 void SPIClass::setBitOrder(uint8_t bitOrder)
@@ -257,3 +222,16 @@ void SPIClass::setClockDivider(uint16_t rate)
 	unLockSPI();
 }
 
+void SPIClass::setSS(uint8_t data) {
+	SPICS(data);
+}
+
+void SPIClass::SPICS(uint8_t data) {
+	if(SPI_IOaddr == 0) return;
+	lockSPI();
+	if(data != 0)
+		io_outpb(SPI_IOaddr + 4, 0x01);
+	else
+		io_outpb(SPI_IOaddr + 4, 0x00);
+	unLockSPI();
+}

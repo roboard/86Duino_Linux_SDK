@@ -26,4 +26,8 @@ int unLockMCMSIF(void);
 #define MCGENAL    (12)
 #define MCSIF      (13)
 
+int lockSPI(void);
+int tryLockSPI(void);
+int unLockSPI(void);
+
 #endif

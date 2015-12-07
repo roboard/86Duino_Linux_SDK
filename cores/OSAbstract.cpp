@@ -14,7 +14,7 @@ pthread_spinlock_t LKGPIO8;
 pthread_spinlock_t LKGPIO9;
 
 pthread_spinlock_t gpio_lock_arary[GPIONUM] = {LKGPIO0, LKGPIO1, LKGPIO2, LKGPIO3, LKGPIO4,
-                                               LKGPIO5, LKGPIO6, LKGPIO7, LKGPIO8, LKGPIO9};
+                                       LKGPIO5, LKGPIO6, LKGPIO7, LKGPIO8, LKGPIO9};
 
 pthread_spinlock_t LKADC;
 
@@ -35,14 +35,17 @@ pthread_spinlock_t LKMCGENAL;
 pthread_spinlock_t LKMCSIF;
 
 pthread_spinlock_t mcm_lock_arary[MCM_MCMD_NUM] = {LKMC0MD0, LKMC0MD1, LKMC0MD2, LKMC1MD0, LKMC1MD1, LKMC1MD2, LKMC2MD0,
-                                                   LKMC2MD1, LKMC2MD2, LKMC3MD0, LKMC3MD1, LKMC3MD2};
+                                              LKMC2MD1, LKMC2MD2, LKMC3MD0, LKMC3MD1, LKMC3MD2};
 
+pthread_spinlock_t LKSPI;
+											  
 void spinLockInit(void) {
 	for(int i=0; i<GPIONUM; i++) pthread_spin_init(&gpio_lock_arary[i], PTHREAD_PROCESS_SHARED);
     pthread_spin_init(&LKADC, PTHREAD_PROCESS_SHARED);
     for(int i=0; i<MCM_MCMD_NUM; i++) pthread_spin_init(&mcm_lock_arary[i], PTHREAD_PROCESS_SHARED);
     pthread_spin_init(&LKMCGENAL, PTHREAD_PROCESS_SHARED);
     pthread_spin_init(&LKMCSIF, PTHREAD_PROCESS_SHARED);
+	pthread_spin_init(&LKSPI, PTHREAD_PROCESS_SHARED);
 	// ... Other spinlock
 }
 
@@ -116,4 +119,16 @@ int tryLockMCMSIF(void) {
 
 int unLockMCMSIF(void) {
 	return pthread_spin_unlock(&LKMCSIF);
+}
+
+int lockSPI(void) {
+	return pthread_spin_lock(&LKSPI);
+}
+
+int tryLockSPI(void) {
+	return pthread_spin_trylock(&LKSPI);
+}
+
+int unLockSPI(void) {
+	return pthread_spin_unlock(&LKSPI);
 }

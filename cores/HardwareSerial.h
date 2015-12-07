@@ -40,7 +40,8 @@ class HardwareSerial : public Stream
   public:
     bool hadbegin;
     HardwareSerial(int com_port, unsigned long com_buadrate, unsigned char com_format, unsigned long com_rxtimeout, unsigned long com_txtimeout);
-    void begin(unsigned long);
+    void setDeviceName(char*);
+	void begin(unsigned long);
     void begin(unsigned long, int);
     void begin(unsigned long, uint8_t);
     void begin(unsigned long , uint8_t, int);

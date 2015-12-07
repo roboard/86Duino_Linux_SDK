@@ -43,6 +43,7 @@ static unsigned char  COM_ctrlREG[6]  = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x14};  /
     } COM_t;
 #elif defined(DMP_LINUX)
     static char* COM_portname[6] = {"/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3", "/dev/ttyS4", "/dev/ttyS5"};
+	static char User_portname[128] = {'\0'};
     typedef struct com_port {
         int fp;
         termios newstate;
@@ -134,6 +135,16 @@ DMPAPI(void) com_EnableFullDuplex(int com) {
 }
 /*-----------------------  end of Internal Functions  ------------------------*/
 
+DMPAPI(bool) com_SetNewPortName(int com, char* portname) {
+	int i;
+	if(portname == NULL) return false;
+	for(i=0; i<128; i++) User_portname[i] = '\0';
+	for(i=0; i<128; i++) if(portname[i] == '\0') break;
+	if(i == 128 || i == 0) return false;
+	for(i=0; portname[i] != '\0'; i++) User_portname[i] = portname[i];
+	COM_portname[com] = &User_portname[0];
+	return true;
+}
 
 static int COM_ioSection[6] = {-1, -1, -1, -1, -1, -1};
 DMPAPI(bool) com_InUse(int com) {

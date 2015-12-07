@@ -84,8 +84,8 @@ typedef struct
 #define COM2			   	(0x01)
 #define COM3			   	(0x02)
 #define COM4			   	(0x03)
-#define COM5                            (0x04)
-#define COM6                            (0x05)
+#define COM5                                  (0x04)
+#define COM6                                  (0x05)
 
 /*
 #define COM7			   	(0x06)
@@ -95,6 +95,7 @@ typedef struct
 #define USB_COM		                    (0x0A)
 #define CAN_BUS				(0x0B)
 */
+DMPAPI(bool) com_SetNewPortName(int com, char* portname);
 DMPAPI(bool) com_Init(int com);
      #define COM_ADUPLEX            (0xff)  // auto. select duplex mode according to RoBoard's version
      #define COM_FDUPLEX            (0)     // full-duplex mode

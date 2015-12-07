@@ -49,6 +49,9 @@ HardwareSerial::HardwareSerial(int com_port, unsigned long com_baudrate, unsigne
 	hadbegin    = false;
 }
 
+void HardwareSerial::setDeviceName(char* name) {
+	if(com_SetNewPortName(port, name) == false) printf("Set serial device name error.\n");
+}
 
 void HardwareSerial::begin(unsigned long baud) {
 	begin(baud, format, COM_FullDuplex);

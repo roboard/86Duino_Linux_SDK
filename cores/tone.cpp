@@ -126,16 +126,16 @@ static int8_t toneBegin(uint8_t _pin)
 /*  IRQ   */                                                                       
 /**********/
 static int mcint_offset[3] = {0, 8, 16};
-static void clear_INTSTATUS(void) {
+DMP_INLINE(void) clear_INTSTATUS(void) {
     mc_outp(mc, 0x04, 0xffL << mcint_offset[md]); //for EX
 }
 
-static void disable_MCINT(void) {
+DMP_INLINE(void) disable_MCINT(void) {
     mc_outp(mc, 0x00, mc_inp(mc, 0x00) & ~(0xffL << mcint_offset[md]));  // disable mc interrupt
     mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) | (1L << mc));
 }
 
-static void enable_MCINT(unsigned long used_int) {
+DMP_INLINE(void) enable_MCINT(unsigned long used_int) {
 	mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) & ~(1L << mc));
 	mc_outp(mc, 0x00, (mc_inp(mc, 0x00) & ~(0xffL<<mcint_offset[md])) | (used_int << mcint_offset[md]));
 }
@@ -144,7 +144,7 @@ static bool toneInitInt = false;
 static char* name = "Tone";
 
 static int h_l = 0;
-static int isr_handler(int irq, void* data)
+DMP_INLINE(int) isr_handler(int irq, void* data)
 {
     unsigned long toneintmask = PULSE_END_INT << mcint_offset[md];
     if((mc_inp(mc, 0x04) & toneintmask) == 0L) return ISR_NONE;
@@ -173,7 +173,7 @@ static int isr_handler(int irq, void* data)
 }
 
 bool timer1_pin32_isUsed = false;
-static bool init_mc_irq(void)
+DMP_INLINE(bool) init_mc_irq(void)
 {
 	if(toneInitInt == false)
 	{
@@ -193,7 +193,7 @@ static bool init_mc_irq(void)
 }
 
 
-void tone_INIT(uint8_t _pin, unsigned int frequency, unsigned long duration){
+DMPAPI(void) tone_INIT(uint8_t _pin, unsigned int frequency, unsigned long duration){
     mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_CANCEL);
     mcpwm_SetOutMask(mc, md, MCPWM_HMASK_NONE + MCPWM_LMASK_NONE);
     mcpwm_SetOutPolarity(mc, md, MCPWM_HPOL_NORMAL + MCPWM_LPOL_NORMAL);
@@ -229,7 +229,7 @@ void tone_INIT(uint8_t _pin, unsigned int frequency, unsigned long duration){
 	mcpwm_Enable(mc, md);
 }
 
-void tone_UPDATE(uint8_t _pin, unsigned int frequency, unsigned long duration) {
+DMPAPI(void) tone_UPDATE(uint8_t _pin, unsigned int frequency, unsigned long duration) {
 	if(frequency <= 0)
 		mcpwm_SetWidth(mc, md, (duration*1000) * SYSCLK,(duration*1000)/2 * SYSCLK);  // period: (1.0/frequency)*1000000)ms 單位ms 
     else
@@ -239,13 +239,13 @@ void tone_UPDATE(uint8_t _pin, unsigned int frequency, unsigned long duration) {
 	mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_PEREND);    
 }
 
-void disableTimer(uint8_t _timer)
+DMPAPI(void) disableTimer(uint8_t _timer)
 {
 }
 
 #endif
 
-void tone(uint8_t _pin, unsigned int frequency, unsigned long duration)
+DMPAPI(void) tone(uint8_t _pin, unsigned int frequency, unsigned long duration)
 {
 #if defined (DMP_LINUX)
 	if(current_pin != -1 && current_pin != _pin)
@@ -300,7 +300,7 @@ void tone(uint8_t _pin, unsigned int frequency, unsigned long duration)
 #endif
 }
 
-void noTone(uint8_t _pin)
+DMPAPI(void) noTone(uint8_t _pin)
 {
 #if defined (DMP_LINUX)
 	if(current_pin != _pin)

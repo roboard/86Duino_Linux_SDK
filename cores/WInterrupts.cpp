@@ -47,16 +47,16 @@ static int mc = 0, md = 1;
 static int mcint_offset[2] = {0, 24};
 static uint8_t used_irq = 0xff;
 static char* name = "attachInt";
-static void clear_INTSTATUS(void) {
+DMP_INLINE(void) clear_INTSTATUS(void) {
     mc_outp(mc, 0x04, 0xffL << mcint_offset[md]); //for EX
 }
 
-static void disable_MCINT(void) {
+DMP_INLINE(void) disable_MCINT(void) {
     mc_outp(mc, 0x00, mc_inp(mc, 0x00) & ~(0xffL << mcint_offset[md]));  // disable mc interrupt
     mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) | (1L << mc));
 }
 
-static void enable_MCINT(unsigned long used_int) {
+DMP_INLINE(void) enable_MCINT(unsigned long used_int) {
 	mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) & ~(1L << mc));
 	mc_outp(mc, 0x00, (mc_inp(mc, 0x00) & ~(0xffL<<mcint_offset[md])) | (used_int << mcint_offset[md]));
 }
@@ -74,7 +74,7 @@ static volatile bool mcm_init[4] = {false, false, false, false};
 static unsigned long _usedMode[4][3];
 
 #if defined (DMP_LINUX)
-void* intrMain(void* pargs)
+void *intrMain(void* pargs)
 {
 	unsigned long capdata;
 	int32_t m, n;
@@ -144,7 +144,7 @@ void* intrMain(void* pargs)
 #endif
 
 #if defined (DMP_DOS_DJGPP)
-static int user_int(int irq, void* data) {
+DMP_INLINE(int) user_int(int irq, void* data) {
 	int i, m, n, evt = 0;
 	unsigned long capdata;
 	
@@ -209,7 +209,7 @@ static int user_int(int irq, void* data) {
 }
 #endif
 
-static void mcmsif_init(int32_t mc)
+DMP_INLINE(void) mcmsif_init(int32_t mc)
 {	
     mcsif_SetInputFilter(mc, MCSIF_MODULEB, 20L);
     mcsif_SetSWDeadband(mc, MCSIF_MODULEB, 0L);
@@ -255,7 +255,7 @@ static void mcmsif_init(int32_t mc)
 }
 
 #if defined (DMP_LINUX)
-static int addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, uint32_t timeout)
+DMP_INLINE(int) addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, uint32_t timeout)
 {
 	pthread_spin_lock(&idc.spinlock);
 
@@ -313,7 +313,7 @@ static int addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, u
 }
 #endif
 
-int interrupt_init(void)
+DMPAPI(int) interrupt_init(void)
 {
 	#if defined (DMP_LINUX)
     pthread_spin_init(&idc.spinlock, 0);
@@ -336,7 +336,7 @@ int interrupt_init(void)
 	#endif
 }
 
-void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode)
+DMPAPI(void) attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode)
 {
 	#if defined (DMP_LINUX)
     if( mode < 0 || mode > 4 )
@@ -446,7 +446,7 @@ void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode)
 	#endif
 }
 
-static void mcmsif_close(int32_t mc)
+DMP_INLINE(void) mcmsif_close(int32_t mc)
 {
 	mcsif_Disable(mc, MCSIF_MODULEB);
 	#if defined (DMP_DOS_DJGPP)
@@ -458,7 +458,7 @@ static void mcmsif_close(int32_t mc)
 	#endif
 }
 
-void detachInterrupt(uint8_t interruptNum)
+DMPAPI(void) detachInterrupt(uint8_t interruptNum)
 {
 	#if defined (DMP_LINUX)
 	if(interruptNum > MAX_INTR_NUM + 1)
@@ -503,14 +503,14 @@ void detachInterrupt(uint8_t interruptNum)
 }
 
 #if defined (DMP_LINUX)
-void attachTimerInterrupt(uint8_t interruptNum, void (*callback)(void), uint32_t microseconds)
+DMPAPI(void) attachTimerInterrupt(uint8_t interruptNum, void (*callback)(void), uint32_t microseconds)
 {
     if(interruptNum != 12)
         return;
     addIRQEntry(interruptNum, callback, 0, microseconds);
 }
 
-void detachTimerInterrupt(void)
+DMPAPI(void) detachTimerInterrupt(void)
 {
 	detachInterrupt(12);
 }

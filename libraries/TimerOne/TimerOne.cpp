@@ -42,23 +42,23 @@ static int mc = 3, md = 2;
 /*   Interrupt   */                                                                       
 /*****************/
 static int mcint_offset[3] = {0, 8, 16};
-static void clear_INTSTATUS(void) {
+DMP_INLINE(void) clear_INTSTATUS(void) {
     mc_outp(mc, 0x04, 0xffL << mcint_offset[md]); //for EX
 }
 
-static void disable_MCINT(void) {
+DMP_INLINE(void) disable_MCINT(void) {
     mc_outp(mc, 0x00, mc_inp(mc, 0x00) & ~(0xffL << mcint_offset[md]));  // disable mc interrupt
     mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) | (1L << mc));
 }
 
-static void enable_MCINT(unsigned long used_int) {
+DMP_INLINE(void) enable_MCINT(unsigned long used_int) {
 	mc_outp(MC_GENERAL, 0x38, mc_inp(MC_GENERAL, 0x38) & ~(1L << mc));
 	mc_outp(mc, 0x00, (mc_inp(mc, 0x00) & ~(0xffL<<mcint_offset[md])) | (used_int << mcint_offset[md]));
 }
 
 // TimerOne ISR
 static char* isrname_one = "TimerOne";
-static int timer1_isr_handler(int irq, void* data) {
+DMP_INLINE(int) timer1_isr_handler(int irq, void* data) {
     if((mc_inp(mc, 0x04) & (PULSE_END_INT << mcint_offset[md])) == 0) return ISR_NONE;
     
 		mc_outp(mc, 0x04, (PULSE_END_INT << mcint_offset[md]));
@@ -68,7 +68,7 @@ static int timer1_isr_handler(int irq, void* data) {
     return ISR_HANDLED;
 }
 
-static bool init_mc_irq(void) {
+DMP_INLINE(bool) init_mc_irq(void) {
 	static bool timerOneInitInt = false;
 	if(timerOneInitInt == false)
 	{	
@@ -81,7 +81,7 @@ static bool init_mc_irq(void) {
     return true;
 }
 
-static void pwmInit(int mcn, int mdn) {
+DMP_INLINE(void) pwmInit(int mcn, int mdn) {
 	mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
 	mcpwm_SetOutMask(mcn, mdn, MCPWM_HMASK_NONE + MCPWM_LMASK_NONE);
 	mcpwm_SetOutPolarity(mcn, mdn, MCPWM_HPOL_NORMAL + MCPWM_LPOL_NORMAL);
@@ -94,7 +94,7 @@ static void pwmInit(int mcn, int mdn) {
 #endif
 
 static bool timerOneInit = false;
-void TimerOne::initialize(long microseconds) {
+DMPAPI(void) TimerOne::initialize(long microseconds) {
 	timerOneInit = true;
 	setPeriod(microseconds);
 }
@@ -109,7 +109,7 @@ TimerOne::TimerOne() {
 static int mc_md_inuse[PINS];
 static int isPwmInit[PINS];
 
-void TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic access
+DMPAPI(void) TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic access
 #if defined (DMP_LINUX)
 	periodMicroseconds = microseconds > 0 ? microseconds : 1;
 #elif defined (DMP_DOS_DJGPP)
@@ -140,7 +140,7 @@ void TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic access
 }
 
 #if defined (DMP_DOS_DJGPP)
-static void safeClosePwmModule(int mcn, int mdn, double _period) {
+DMP_INLINE(void) safeClosePwmModule(int mcn, int mdn, double _period) {
 	if(mcpwm_ReadReloadPWM(mcn, mdn) != 0) mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
 	mcpwm_SetWidth(mcn, mdn, _period-1.0, 0L);
 	mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_PEREND);
@@ -150,7 +150,7 @@ static void safeClosePwmModule(int mcn, int mdn, double _period) {
 }
 #endif
 
-void TimerOne::setPwmDuty(char pin, int duty) {
+DMPAPI(void) TimerOne::setPwmDuty(char pin, int duty) {
 #if defined (DMP_DOS_DJGPP)
 	int mcn, mdn;
 	unsigned short crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
@@ -203,7 +203,7 @@ void TimerOne::setPwmDuty(char pin, int duty) {
 #endif
 }
 
-void TimerOne::pwm(char pin, int duty, long microseconds) { // expects duty cycle to be 10 bit (1024)
+DMPAPI(void) TimerOne::pwm(char pin, int duty, long microseconds) { // expects duty cycle to be 10 bit (1024)
 #if defined (DMP_DOS_DJGPP)
 	int mcn, mdn;
 	if(pin < 0 || pin >= PINS || timerOneInit == false) return;
@@ -220,7 +220,7 @@ void TimerOne::pwm(char pin, int duty, long microseconds) { // expects duty cycl
 #endif
 }
 
-void TimerOne::disablePwm(char pin) {
+DMPAPI(void) TimerOne::disablePwm(char pin) {
 #if defined (DMP_DOS_DJGPP)
 	unsigned short crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
 	int mcn, mdn;
@@ -242,7 +242,7 @@ void TimerOne::disablePwm(char pin) {
 #endif
 }
  
-void TimerOne::attachInterrupt(void (*isr)(void), long microseconds) {
+DMPAPI(void) TimerOne::attachInterrupt(void (*isr)(void), long microseconds) {
 #if defined (DMP_DOS_DJGPP)
 	int i;
 	if(timerOneInit == false || isr == NULL) return;
@@ -280,7 +280,7 @@ void TimerOne::attachInterrupt(void (*isr)(void), long microseconds) {
 #endif
 }
 
-void TimerOne::detachInterrupt() {
+DMPAPI(void) TimerOne::detachInterrupt() {
 #if defined (DMP_DOS_DJGPP)
 	if(timerOneInit == false || timer1Enable == false) return;
 	disable_MCINT(); // timer continues to count without calling the isr
@@ -289,19 +289,19 @@ void TimerOne::detachInterrupt() {
 #endif
 }
 
-void TimerOne::resume()	{
+DMPAPI(void) TimerOne::resume()	{
 #if defined (DMP_DOS_DJGPP)
 	start();
 #endif
 }
 
-void TimerOne::restart() { // Depricated - Public interface to start at zero - Lex 10/9/2011
+DMPAPI(void) TimerOne::restart() { // Depricated - Public interface to start at zero - Lex 10/9/2011
 #if defined (DMP_DOS_DJGPP)
 	start();
 #endif
 }
 
-void TimerOne::start() { // AR addition, renamed by Lex to reflect it's actual role
+DMPAPI(void) TimerOne::start() { // AR addition, renamed by Lex to reflect it's actual role
 #if defined (DMP_DOS_DJGPP)
 	int mcn, mdn, i;
 	if(timer1Enable == false)
@@ -326,7 +326,7 @@ void TimerOne::start() { // AR addition, renamed by Lex to reflect it's actual r
 #endif
 }
 
-void TimerOne::stop() {
+DMPAPI(void) TimerOne::stop() {
 #if defined (DMP_DOS_DJGPP)
 	int mcn, mdn, i;
 	if(timer1Enable == true)
@@ -348,7 +348,7 @@ void TimerOne::stop() {
 #endif
 }
 
-unsigned long TimerOne::read() {	//returns the value of the timer in microseconds
+DMPAPI(unsigned long) TimerOne::read() {	//returns the value of the timer in microseconds
 #if defined (DMP_DOS_DJGPP)
 	unsigned long tmp = mcpwm_ReadSTATREG2(mc, md);
 	return ((_period - tmp) / SYSCLK);
@@ -374,7 +374,7 @@ TimerRealTimeClock::TimerRealTimeClock() {
 }
 
 static char* isrname_rtc = "TimerRTC";
-static int timerrtc_isr_handler(int irq, void* data) {
+DMP_INLINE(int) timerrtc_isr_handler(int irq, void* data) {
 	unsigned char tmp;
 	io_outpb(0x70, 0x0C); // enable NMI and read RTC register C 
 	tmp = io_inpb(0x71); // clear RTC interrupt state
@@ -402,7 +402,7 @@ DMP_INLINE(void) outpb_cmos(unsigned char reg, unsigned char data) {
 }
 
 static bool timerRTCInit = false;
-void TimerRealTimeClock::initialize(long microseconds) {
+DMPAPI(void) TimerRealTimeClock::initialize(long microseconds) {
     unsigned char tmp;
     timerRTCInit = true;
     setPeriod(microseconds);
@@ -411,7 +411,7 @@ void TimerRealTimeClock::initialize(long microseconds) {
     outpb_cmos(0x0A, (tmp & 0xF0) | _freq);
 }
 
-void TimerRealTimeClock::attachInterrupt(void (*isr)(void), long microseconds) {
+DMPAPI(void) TimerRealTimeClock::attachInterrupt(void (*isr)(void), long microseconds) {
     unsigned char tmp;
     
     if(timerRTCInit == false || isr == NULL) return;
@@ -439,7 +439,7 @@ void TimerRealTimeClock::attachInterrupt(void (*isr)(void), long microseconds) {
     timerRTCEnable = true;
 }
 
-void TimerRealTimeClock::detachInterrupt() {
+DMPAPI(void) TimerRealTimeClock::detachInterrupt() {
     unsigned char tmp;
     if(timerRTCInit == false || timerRTCEnable == false) return;
     
@@ -450,7 +450,7 @@ void TimerRealTimeClock::detachInterrupt() {
     timerRTCEnable = false;
 }
 
-void TimerRealTimeClock::setPeriod(long microseconds) {
+DMPAPI(void) TimerRealTimeClock::setPeriod(long microseconds) {
 	if(timerRTCInit == false || microseconds <= 0) return;
 	
 	if     (microseconds < 183L)    _freq = 3;

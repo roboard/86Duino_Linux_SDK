@@ -27,6 +27,7 @@
 #define MSBFIRST 1
 #endif
 
+#define SPITIMEOUT    (1000) // 1ms
 // For Arduino compatibility (it is 16MHz ex: ATmega328p)
 #define SPI_CLOCK_DIV2    (7)   // 8M   ~= 100/(2*7)
 #define SPI_CLOCK_DIV4    (13)  // 4M   ~= 100/(2*13)
@@ -159,59 +160,84 @@ public:
   // Write to the SPI bus (MOSI pin) and also receive (MISO pin)
   inline static uint8_t transfer(uint8_t data) {
     unsigned char val;
+	unsigned long t; 
 	if(SPI_IOaddr == 0) return 0;
+	
 	lockSPI();
 	io_outpb(SPI_IOaddr, data);
-	while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+	
+	t = micros();
+	while((micros() - t) < SPITIMEOUT)	if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	t = micros();
+	while((micros() - t) < SPITIMEOUT)	if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	
 	val = io_inpb(SPI_IOaddr + 1);
 	unLockSPI();
+	
 	return val;
   }
   inline static uint16_t transfer16(uint16_t data) {
     union { uint16_t val; struct { uint8_t lsb; uint8_t msb; }; } in, out;
-    if(SPI_IOaddr == 0) return 0;
+    unsigned long t;
+	
+	if(SPI_IOaddr == 0) return 0;
     in.val = data;
 	
 	lockSPI();
     if (!(io_inpb(SPI_IOaddr + 7) & 0x20)) {
       io_outpb(SPI_IOaddr, in.msb);
-      while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	  while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+      t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
       out.msb = io_inpb(SPI_IOaddr + 1);
+	  
       io_outpb(SPI_IOaddr, in.lsb);
-      while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	  while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+      t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
       out.lsb = io_inpb(SPI_IOaddr + 1);
     } else {
       io_outpb(SPI_IOaddr, in.lsb);
-      while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	  while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+      t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
       out.lsb = io_inpb(SPI_IOaddr + 1);
+	  
       io_outpb(SPI_IOaddr, in.msb);
-      while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	  while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+      t = micros();
+	  t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
       out.msb = io_inpb(SPI_IOaddr + 1);
     }
 	unLockSPI();
     return out.val;
   }
   inline static void transfer(void *buf, size_t count) {
-    if(SPI_IOaddr == 0 || count == 0) return;
+    unsigned long t;
+	if(SPI_IOaddr == 0 || count == 0) return;
 
 	lockSPI();
     uint8_t *p = (uint8_t *)buf;
     io_outpb(SPI_IOaddr, *p);
     while (--count > 0) {
       uint8_t out = *(p + 1);
-      while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	  while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+      t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  t = micros();
+	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
       uint8_t in = io_inpb(SPI_IOaddr + 1);
       io_outpb(SPI_IOaddr, out);
       *p++ = in;
     }
-    while((io_inpb(SPI_IOaddr + 3) & 0x08) == 0);
-	while((io_inpb(SPI_IOaddr + 3) & 0x20) == 0);
+    t = micros();
+	while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	t = micros();
+	while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
     *p = io_inpb(SPI_IOaddr + 1);
 	unLockSPI();
   }

@@ -30,6 +30,7 @@
   #include <pthread.h>
   pthread_spinlock_t rxBuffLock;
   pthread_spinlock_t txBuffLock;
+  pthread_spinlock_t multiWireLock;
 #endif
 
 // Initialize Class Variables //////////////////////////////////////////////////
@@ -54,6 +55,7 @@ TwoWire::TwoWire()
 #if defined (DMP_LINUX)
 	pthread_spin_init(&rxBuffLock, PTHREAD_PROCESS_SHARED);
 	pthread_spin_init(&txBuffLock, PTHREAD_PROCESS_SHARED);
+	pthread_spin_init(&multiWireLock, PTHREAD_PROCESS_SHARED);
 #endif
 }
 
@@ -413,11 +415,69 @@ void TwoWire::onRequest( void (*function)(void) )
 #endif
 }
 
+#if defined (DMP_LINUX)
+bool TwoWire::send(uint8_t addr, uint8_t* data, int datasize) {
+	int i;
+	bool err = false;
+	if(data == NULL || datasize == 0) return false;
+
+	pthread_spin_lock(&multiWireLock);
+	
+	Wire.beginTransmission(addr);
+	for(i=0; i<datasize; i++) Wire.write(data[i]);
+	if(Wire.endTransmission() != 0) {printf("%s error\n", __FUNCTION__); err = true;}
+	
+	pthread_spin_unlock(&multiWireLock);
+	
+	return (err == true) ? false : true;
+}
+
+bool TwoWire::receive(uint8_t addr, uint8_t* buf, uint8_t bufsize) {
+	int i, read;
+	bool err = false;
+	if(buf == NULL || bufsize == 0) return 0;
+	
+	pthread_spin_lock(&multiWireLock);
+	
+	read = Wire.requestFrom(addr, bufsize);
+	if(read < bufsize) {printf("The  bytes read by I2C are less than input buff size\n"); err = true;}
+	for(i=0; i<read; i++) buf[i] = Wire.read();
+	
+	pthread_spin_unlock(&multiWireLock);
+	
+	return (err == true) ? false : true;
+}
+
+bool TwoWire::sensorRead(uint8_t addr, uint8_t cmd, uint8_t* buf, uint8_t bufsize) {
+	return sensorReadEX(addr, &cmd, 1, buf, bufsize);
+}
+bool TwoWire::sensorReadEX(uint8_t addr, uint8_t* cmds, int cmdsize, uint8_t* buf, uint8_t bufsize) {
+	int i, read;
+	bool err = false;
+
+	if(cmds == NULL || buf == NULL || cmdsize == 0 || bufsize == 0) return false;
+
+	pthread_spin_lock(&multiWireLock);
+
+	Wire.beginTransmission(addr);
+	for(i=0; i<cmdsize; i++) Wire.write(cmds[i]);
+	if(Wire.endTransmission(false) != 0) {printf("%s error\n", __FUNCTION__); err = true;} // send restart 
+	read = Wire.requestFrom(addr, bufsize);
+	if(read < bufsize) {printf("The  bytes read by I2C are less than input buff size\n"); err = true;}
+	for(i=0; i<read; i++) buf[i] = Wire.read();
+
+	pthread_spin_unlock(&multiWireLock);
+	
+	return (err == true) ? false : true;
+}
+#endif
+
 
 
 #if defined (DMP_LINUX)
   pthread_spinlock_t sw_rxBuffLock;
   pthread_spinlock_t sw_txBuffLock;
+  pthread_spinlock_t sw_multiWireLock;
 #endif
 
 // Initialize Class Variables //////////////////////////////////////////////////
@@ -638,6 +698,60 @@ void TwoWireLEGO::flush(void)
 {
   // XXX: to be implemented.
 }
+
+#if defined (DMP_LINUX)
+bool TwoWireLEGO::send(uint8_t addr, uint8_t* data, int datasize) {
+	int i;
+	bool err = false;
+	
+	pthread_spin_lock(&sw_multiWireLock);
+	
+	WireLEGO.beginTransmission(addr);
+	for(i=0; i<datasize; i++) WireLEGO.write(data[i]);
+	if(WireLEGO.endTransmission() != 0) {printf("%s error\n", __FUNCTION__); err = true;}
+	
+	pthread_spin_unlock(&sw_multiWireLock);
+	
+	return (err == true) ? false : true;
+}
+
+bool TwoWireLEGO::receive(uint8_t addr, uint8_t* buf, uint8_t bufsize) {
+	int i, read;
+	bool err = false;
+	if(buf == NULL || bufsize == 0) return 0;
+	
+	pthread_spin_lock(&sw_multiWireLock);
+	
+	read = WireLEGO.requestFrom(addr, bufsize);
+	if(read < bufsize) {printf("The  bytes read by I2C are less than input buff size\n"); err = true;}
+	for(i=0; i<read; i++) buf[i] = WireLEGO.read();
+	
+	pthread_spin_unlock(&sw_multiWireLock);
+	
+	return (err == true) ? false : true;
+}
+
+bool TwoWireLEGO::sensorRead(uint8_t addr, uint8_t cmd, uint8_t* buf, uint8_t bufsize) {
+	return sensorReadEX(addr, &cmd, 1, buf, bufsize);
+}
+bool TwoWireLEGO::sensorReadEX(uint8_t addr, uint8_t* cmds, int cmdsize, uint8_t* buf, uint8_t bufsize) {
+	int i, read;
+	bool err = false;
+
+	pthread_spin_lock(&sw_multiWireLock);
+
+	WireLEGO.beginTransmission(addr);
+	for(i=0; i<cmdsize; i++) WireLEGO.write(cmds[i]);
+	if(WireLEGO.endTransmission(false) != 0) {printf("%s error\n", __FUNCTION__); err = true;} // send restart 
+	read = WireLEGO.requestFrom(addr, bufsize);
+	if(read < bufsize) {printf("The  bytes read by I2C are less than input buff size\n"); err = true;}
+	for(i=0; i<read; i++) buf[i] = WireLEGO.read();
+
+	pthread_spin_unlock(&sw_multiWireLock);
+	
+	return (err == true) ? false : true;
+}
+#endif
 
 
 // Preinstantiate Objects //////////////////////////////////////////////////////

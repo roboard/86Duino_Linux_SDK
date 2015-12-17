@@ -418,7 +418,6 @@ void TwoWire::onRequest( void (*function)(void) )
 #if defined (DMP_LINUX)
   pthread_spinlock_t sw_rxBuffLock;
   pthread_spinlock_t sw_txBuffLock;
-  pthread_spinlock_t sw_wireVariableLock;
 #endif
 
 // Initialize Class Variables //////////////////////////////////////////////////
@@ -438,13 +437,18 @@ uint8_t TwoWireLEGO::transmitting = 0;
 
 TwoWireLEGO::TwoWireLEGO()
 {
+#if defined (DMP_LINUX)
+	pthread_spin_init(&sw_rxBuffLock, PTHREAD_PROCESS_SHARED);
+	pthread_spin_init(&sw_txBuffLock, PTHREAD_PROCESS_SHARED);
+#endif
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 void TwoWireLEGO::begin(unsigned long nHz)
 {
 #if defined (DMP_LINUX)
-  pthread_spin_lock(&sw_wireVariableLock);
+  pthread_spin_lock(&sw_txBuffLock);
+  pthread_spin_lock(&sw_rxBuffLock);
 #endif
   rxBufferIndex  = 0;
   rxBufferLength = 0;
@@ -452,7 +456,8 @@ void TwoWireLEGO::begin(unsigned long nHz)
   txBufferIndex  = 0;
   txBufferLength = 0;
 #if defined (DMP_LINUX)
-  pthread_spin_unlock(&sw_wireVariableLock);
+  pthread_spin_unlock(&sw_rxBuffLock);
+  pthread_spin_unlock(&sw_txBuffLock);
 #endif
 
   if(nHz == 0) nHz = 10000L; // default
@@ -475,12 +480,12 @@ uint8_t TwoWireLEGO::requestFrom(uint8_t address, uint8_t quantity, uint8_t send
   uint8_t read = twisw_readFrom(address, rxBuffer, quantity, sendStop);
 
 #if defined (DMP_LINUX)
-  pthread_spin_lock(&sw_wireVariableLock);
+  pthread_spin_lock(&sw_rxBuffLock);
 #endif
   rxBufferIndex = 0;
   rxBufferLength = read;
 #if defined (DMP_LINUX)
-  pthread_spin_unlock(&sw_wireVariableLock);
+  pthread_spin_unlock(&sw_rxBuffLock);
 #endif
 
   return read;
@@ -504,7 +509,7 @@ uint8_t TwoWireLEGO::requestFrom(int address, int quantity, int sendStop)
 void TwoWireLEGO::beginTransmission(uint8_t address)
 {
 #if defined (DMP_LINUX)
-  pthread_spin_lock(&sw_wireVariableLock);
+  pthread_spin_lock(&sw_txBuffLock);
 #endif
   transmitting   = 1;
   txAddress     = address;
@@ -512,7 +517,7 @@ void TwoWireLEGO::beginTransmission(uint8_t address)
   txBufferIndex  = 0;
   txBufferLength = 0;
 #if defined (DMP_LINUX)
-  pthread_spin_unlock(&sw_wireVariableLock);
+  pthread_spin_unlock(&sw_txBuffLock);
 #endif
 }
 
@@ -526,14 +531,14 @@ uint8_t TwoWireLEGO::endTransmission(uint8_t sendStop)
   int8_t ret = twisw_writeTo(txAddress, txBuffer, txBufferLength, sendStop);
 
 #if defined (DMP_LINUX)
-  pthread_spin_lock(&sw_wireVariableLock);
+  pthread_spin_lock(&sw_txBuffLock);
 #endif
   txBufferIndex  = 0;
   txBufferLength = 0;
 
   transmitting   = 0;
 #if defined (DMP_LINUX)
-  pthread_spin_unlock(&sw_wireVariableLock);
+  pthread_spin_unlock(&sw_txBuffLock);
 #endif
   return ret;
 }
@@ -548,11 +553,11 @@ size_t TwoWireLEGO::write(uint8_t data)
   int txLenght;
 
 #if defined (DMP_LINUX)
-  pthread_spin_lock(&sw_wireVariableLock);
+  pthread_spin_lock(&sw_txBuffLock);
 #endif
   txLenght = txBufferLength;
 #if defined (DMP_LINUX)
-  pthread_spin_unlock(&sw_wireVariableLock);
+  pthread_spin_unlock(&sw_txBuffLock);
 #endif
   
   if(txLenght >= BUFFER_LENGTH)

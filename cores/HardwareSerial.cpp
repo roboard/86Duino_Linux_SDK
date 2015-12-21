@@ -47,6 +47,7 @@ HardwareSerial::HardwareSerial(int com_port, unsigned long com_baudrate, unsigne
 	txtimeout   = com_txtimeout;
 	peek_stored = false;
 	hadbegin    = false;
+	pthread_spin_init(&beginLock, PTHREAD_PROCESS_SHARED);
 }
 
 void HardwareSerial::setDeviceName(char* name) {
@@ -67,21 +68,20 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config) {
 
 void HardwareSerial::begin(unsigned long baud, uint8_t config, int comtype) {
     unsigned short crossbar_ioaddr = 0;
-	if(hadbegin == true) return;
 
-	if (io_Init() == false) {
-		printf("ERROR: IO init fail.\n");
-		return;
-	}
-	sb_Write(0xc0, sb_Read(0xc0) & 0x7fffffffL | ((unsigned long)1L << 31));
-	io_Close();
+	pthread_spin_lock(&beginLock);
+	
+	if(hadbegin == true) {pthread_spin_unlock(&beginLock); return;}
 
 	if (com_Init(port) == false)
 	{
 		printf("COM init fail!!\n");
+		pthread_spin_unlock(&beginLock);
 		return;
 	}
 
+	sb_Write(0xc0, sb_Read(0xc0) & 0x7fffffffL | ((unsigned long)1L << 31));
+	
 	switch(baud)
 	{
 //	case 748800L:  baud = COMBAUD_748800BPS;  break;
@@ -128,6 +128,7 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config, int comtype) {
 		io_outpb(crossbar_ioaddr + COM3_RX, 0x08);
 	}
     hadbegin = true;
+	pthread_spin_unlock(&beginLock);
 }
 
 void HardwareSerial::end() {

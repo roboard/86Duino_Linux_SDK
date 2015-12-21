@@ -169,7 +169,7 @@ DMPAPI(bool) com_Init(int com) {
     COM_baseaddr[com] = uart_getbaseaddr(com);
     COM_oldTMode[com] = com_IsTurboMode(com);
     COM_oldFMode[com] = com_IsFIFO32Mode(com);
-    
+
     #if defined(DMP_MSVC_WIN32) || defined(DMP_MSVC_WINCE)
         {
         #ifdef RB_MSVC_WINCE
@@ -591,63 +591,10 @@ DMPAPI(int) com_QueryRFIFO(int com) {
     return numbytes;
 }
 
-
-
-#if defined(DMP_MSVC_WIN32)
-    static HANDLE hApp, hThread;
-    static int iPriorityClass, iPriority;
-#elif defined(DMP_MSVC_WINCE)
-    static HANDLE hThread;
-    static int iPriority;
-#elif defined(DMP_LINUX)
-	static int iPriority;
-#endif
-
-static void MPOS_Start(void) {
-    #if defined(DMP_MSVC_WIN32)
-	    hApp = GetCurrentProcess();
-        hThread = GetCurrentThread();
-
-        iPriorityClass = GetPriorityClass(hApp);
-        iPriority = GetThreadPriority(hThread);
-
-        if (iPriorityClass != 0) SetPriorityClass(hApp, REALTIME_PRIORITY_CLASS);
-        if (iPriority != THREAD_PRIORITY_ERROR_RETURN) SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
-	#elif defined(DMP_MSVC_WINCE)
-        hThread = GetCurrentThread();
-        iPriority = GetThreadPriority(hThread);
-        if (iPriority != THREAD_PRIORITY_ERROR_RETURN) SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
-    #elif defined(DMP_LINUX)
-	    iPriority = getpriority(PRIO_PROCESS, 0); //lazy to check error:p
-        setpriority(PRIO_PROCESS, 0, -20);
-    #else
-        //backup & disable all IRQ except COM port's IRQ
-    #endif
-}
-
-static void MPOS_End(void) {
-    #if defined(DMP_MSVC_WIN32)
-        if (iPriorityClass != 0) SetPriorityClass(hApp, iPriorityClass);
-		if (iPriority != THREAD_PRIORITY_ERROR_RETURN) SetThreadPriority(hThread, iPriority);
-	#elif defined(DMP_MSVC_WINCE)
-		if (iPriority != THREAD_PRIORITY_ERROR_RETURN) SetThreadPriority(hThread, iPriority);
-    #elif defined(DMP_LINUX)
-		setpriority(PRIO_PROCESS, 0, iPriority);
-    #else
-        //restore all IRQ settings
-    #endif
-}
-
 DMPAPI(bool) com_Send(int com, unsigned char* buf, int bsize) {
     unsigned long nowtime;
     int numbytes = 0, bsize2;
-/*
-    if (COM_duplex[com] == COM_HDUPLEX_RTS)
-    {
-        MPOS_Start();
-        set_rts(com);
-    }
-*/
+
     while (bsize > 0)
     {
         bsize2 = (bsize <= MAXRWSIZE)? bsize : MAXRWSIZE;
@@ -680,26 +627,10 @@ DMPAPI(bool) com_Send(int com, unsigned char* buf, int bsize) {
         } // for (nowtime...
     } // end while (bsize...
 
-/*
-    if (COM_duplex[com] == COM_HDUPLEX_RTS)
-    {
-        com_FlushWFIFO(com);
-        clear_rts(com);
-        MPOS_End();
-    }
-*/
     return true;
 
 SEND_FAIL:
     return false;
-/*
-    if (COM_duplex[com] == COM_HDUPLEX_RTS)
-    {
-        clear_rts(com);
-        MPOS_End();
-    }
-    return false;
-*/
 }
 
 DMPAPI(bool) com_Write(int com, unsigned char val) {

@@ -159,7 +159,7 @@ public:
 
   // Write to the SPI bus (MOSI pin) and also receive (MISO pin)
   inline static uint8_t transfer(uint8_t data) {
-    unsigned char val;
+    unsigned char val = 0;
 	unsigned long t; 
 	if(SPI_IOaddr == 0) return 0;
 	
@@ -168,10 +168,13 @@ public:
 	
 	t = micros();
 	while((micros() - t) < SPITIMEOUT)	if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto TEND;}
 	t = micros();
 	while((micros() - t) < SPITIMEOUT)	if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto TEND;}
 	
 	val = io_inpb(SPI_IOaddr + 1);
+TEND:
 	unLockSPI();
 	
 	return val;
@@ -182,38 +185,49 @@ public:
 	
 	if(SPI_IOaddr == 0) return 0;
     in.val = data;
+	out.val = 0;
 	
 	lockSPI();
     if (!(io_inpb(SPI_IOaddr + 7) & 0x20)) {
       io_outpb(SPI_IOaddr, in.msb);
       t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto T16END;}
 	  t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto T16END;}
       out.msb = io_inpb(SPI_IOaddr + 1);
 	  
       io_outpb(SPI_IOaddr, in.lsb);
       t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto T16END;}
 	  t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto T16END;}
       out.lsb = io_inpb(SPI_IOaddr + 1);
-    } else {
+    }
+	else
+	{
       io_outpb(SPI_IOaddr, in.lsb);
       t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto T16END;}
 	  t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto T16END;}
       out.lsb = io_inpb(SPI_IOaddr + 1);
 	  
       io_outpb(SPI_IOaddr, in.msb);
-      t = micros();
 	  t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto T16END;}
 	  t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto T16END;}
       out.msb = io_inpb(SPI_IOaddr + 1);
     }
+T16END:
 	unLockSPI();
     return out.val;
   }
@@ -228,17 +242,22 @@ public:
       uint8_t out = *(p + 1);
       t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto TBEND;}
 	  t = micros();
 	  while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	  if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto TBEND;}
       uint8_t in = io_inpb(SPI_IOaddr + 1);
       io_outpb(SPI_IOaddr, out);
       *p++ = in;
     }
     t = micros();
 	while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x08) != 0) break;
+	if((io_inpb(SPI_IOaddr + 3) & 0x08) == 0) {printf("error: Output FIFO is not empty\n"); goto TBEND;}
 	t = micros();
 	while((micros() - t) < SPITIMEOUT) if((io_inpb(SPI_IOaddr + 3) & 0x20) != 0) break;
+	if((io_inpb(SPI_IOaddr + 3) & 0x20) == 0) {printf("error: Input FIFO is  empty\n"); goto TBEND;}
     *p = io_inpb(SPI_IOaddr + 1);
+TBEND:
 	unLockSPI();
   }
 

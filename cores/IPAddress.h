@@ -67,8 +67,8 @@ public:
 
     // Overloaded index operator to allow getting and setting individual octets of the address
     uint8_t operator[](int idx) const { return ((uint8_t*)&_sin.sin_addr.s_addr)[idx]; };
-    operator in_addr_t() { return _sin.sin_addr.s_addr; };
-    //uint8_t& operator[](int idx) { return ((uint8_t*)&_sin.sin_addr.s_addr))[idx]; };
+    //operator in_addr_t() { return _sin.sin_addr.s_addr; };
+    uint8_t& operator[](int idx) { return ((uint8_t*)&_sin.sin_addr.s_addr)[idx]; };
 
     // Overloaded copy operators to allow initialisation of IPAddress objects from other types
     IPAddress& operator=(const uint8_t *address);

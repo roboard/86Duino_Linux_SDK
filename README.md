@@ -62,7 +62,7 @@ Under L86duntu (Lubuntu 12.04), use 86Duino SDK based on 86Duino Coding 210.
 |         TFT        |    O    |  Tested  |
 |        WiFi        |    X    |          |
 |        Wire        |    O    |  Tested  |
-|       Encoder      |    O    |  Tested  |
+|       Encoder      |    P    |  Tested  |
 |       CANBus       |    X    |          |
 |     Rosserial86    |    O    |  Tested  |
 |       Servo86      |    X    |          |
@@ -87,3 +87,5 @@ Under L86duntu (Lubuntu 12.04), use 86Duino SDK based on 86Duino Coding 210.
 |        Mirf        |    O    | Compiled |
 |    VirtualWire     |    X    |          |
 |      RadioHead     |    O    | Compiled |
+
+* P => Partially Support

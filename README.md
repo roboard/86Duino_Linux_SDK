@@ -1,5 +1,5 @@
 # 86Duino_Linux_SDK
-Under L86duntu (based on Lubuntu 12.04), we can write programs with 86Duino Linux SDK (based on 86Duino Coding 210) to manipulate I/Os on 86Duino. In addition, there are many useful libraries such as *Ethernet*, *Wire* in this SDK.
+Under L86duntu (based on Lubuntu 12.04), we can write programs with 86Duino Linux SDK (based on 86Duino Coding 210) to manipulate I/Os on 86Duino. In addition, there are many useful libraries in this SDK, such as *Ethernet*, *Wire*, etc.
 
 ## Language Reference
 |                      |           API           |    Status   |

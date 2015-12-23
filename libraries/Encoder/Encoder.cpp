@@ -33,7 +33,7 @@ static uint8_t used_irq = 0xff;
 static char* name = "attachInt";
 static int mcint_offset[2] = {0, 24};
 
-pthread_spinlock_t encvar;
+OSSPIN encvar;
 
 static void clear_INTSTATUS(int mc) {
     mc_outp(mc, 0x04, 0xff000000L); //for EX SIFB
@@ -243,7 +243,7 @@ void Encoder::_pdirInit(int samplerate) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
     io_DisableINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_lock(&encvar);
+	OSSPINLOCK(encvar);
 #endif
 
 	if(samplerate == 1)
@@ -260,7 +260,7 @@ void Encoder::_pdirInit(int samplerate) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
 	io_RestoreINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_unlock(&encvar);
+	OSSPINUNLOCK(encvar);
 #endif
 }
 
@@ -274,7 +274,7 @@ void Encoder::_cwccwInit(int samplerate) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
     io_DisableINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_lock(&encvar);
+	OSSPINLOCK(encvar);
 #endif
 
     if(samplerate == 1)
@@ -291,7 +291,7 @@ void Encoder::_cwccwInit(int samplerate) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
 	io_RestoreINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_unlock(&encvar);
+	OSSPINUNLOCK(encvar);
 #endif
 }
 
@@ -305,7 +305,7 @@ void Encoder::_pabInit(int samplerate) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
     io_DisableINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_lock(&encvar);
+	OSSPINLOCK(encvar);
 #endif
 
     if(samplerate == 1)
@@ -322,7 +322,7 @@ void Encoder::_pabInit(int samplerate) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
 	io_RestoreINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_unlock(&encvar);
+	OSSPINUNLOCK(encvar);
 #endif
 }                                                   
 
@@ -361,7 +361,7 @@ void Encoder::_pcapInit(void) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
     io_DisableINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_lock(&encvar);
+	OSSPINLOCK(encvar);
 #endif
 
 	_mcmode[mcn] = MODE_CAPTURE;
@@ -369,7 +369,7 @@ void Encoder::_pcapInit(void) {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
 	io_RestoreINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_unlock(&encvar);
+	OSSPINUNLOCK(encvar);
 #endif
 }
 
@@ -398,7 +398,7 @@ void Encoder::_ssiInit(unsigned long bits, unsigned long clk, unsigned long wtim
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
     io_DisableINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_lock(&encvar);
+	OSSPINLOCK(encvar);
 #endif
 
 	_mcmode[mcn] = MODE_SSI;
@@ -406,7 +406,7 @@ void Encoder::_ssiInit(unsigned long bits, unsigned long clk, unsigned long wtim
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
 	io_RestoreINT();
 #elif defined (DMP_LINUX)
-	pthread_spin_unlock(&encvar);
+	OSSPINUNLOCK(encvar);
 #endif
 }
 
@@ -436,13 +436,13 @@ static void open_encoder_pin(int mc, int pin) {
 
 void Encoder::begin(int sifmode, unsigned long bits, unsigned long clk, unsigned long wtime, bool gray2bin) {
 #if defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
-	if(mode != MODE_NOSET) {unLockMCM(mcn, mdn); return;}
+	lockMCMSIF();
+	if(mode != MODE_NOSET) {unLockMCMSIF(); return;}
 #else
 	if(mode != MODE_NOSET) return;
 #endif
 
-	pthread_spin_init(&encvar, PTHREAD_PROCESS_SHARED);
+	OSSPININIT(encvar);
 
 	mode = sifmode;
 	if(mode == MODE_CWCCW)            _cwccwInit(1);
@@ -466,7 +466,7 @@ void Encoder::begin(int sifmode, unsigned long bits, unsigned long clk, unsigned
 	mcsif_Enable(mcn, mdn);
 
 #if defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 }
 
@@ -478,8 +478,8 @@ void Encoder::end() {
 	io_DisableINT();
 	if(mode == MODE_NOSET) return;
 #elif defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
-	if(mode == MODE_NOSET) {unLockMCM(mcn, mdn); return;}
+	lockMCMSIF();
+	if(mode == MODE_NOSET) {unLockMCMSIF(); return;}
 #endif
 
 	mcsif_Disable(mcn, mdn);
@@ -505,7 +505,7 @@ void Encoder::end() {
 #if defined (DMP_DOS_BC) || (DMP_DOS_DJGPP)
 	io_RestoreINT();
 #elif defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 
 	for(i=0; i<4; i++)
@@ -531,7 +531,7 @@ void Encoder::write(unsigned long cnt) {
 	if(mode == MODE_NOSET || mode == MODE_CAPTURE) return;
 
 #if defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
+	lockMCMSIF();
 #endif
 
 	mcsif_Disable(mcn, mdn);
@@ -542,7 +542,7 @@ void Encoder::write(unsigned long cnt) {
 	mcsif_Enable(mcn, mdn);
 
 #if defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 }
 
@@ -552,7 +552,7 @@ void Encoder::setDigitalFilter(unsigned long width) {
     if(mode == MODE_CAPTURE && _pcapAttchINT == true) return;
 
 #if defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
+	lockMCMSIF();
 #endif
 
     mcsif_Disable(mcn, mdn);
@@ -560,7 +560,7 @@ void Encoder::setDigitalFilter(unsigned long width) {
     mcsif_Enable(mcn, mdn);
 
 #if defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 }
 
@@ -610,11 +610,11 @@ int Encoder::indexRead(void) {
 	unsigned long tmp = 0L;
 	if(mode == MODE_NOSET || mode == MODE_CAPTURE || mode == MODE_SSI) return 0xff;
 #if defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
+	lockMCMSIF();
 #endif
 	tmp = mcpfau_ReadCapStatREG(mcn, mdn);
 #if defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 	return ((tmp & 0x20) != 0L) ? HIGH : LOW;
 }
@@ -676,13 +676,13 @@ int Encoder::directionRead(void) {
 	if(mode == MODE_NOSET || mode == MODE_CAPTURE || mode == MODE_SSI) return 0xff;
 
 #if defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
+	lockMCMSIF();
 #endif
 
 	if(mcenc_ReadDIR(mcn, mdn) == 0L) ret = 1; else ret = -1;
 
 #if defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 
 	return ((_dir == 0) ? ret : ((ret == 1) ? -1 : 1));
@@ -715,19 +715,19 @@ unsigned long Encoder::read() {
 
 	return mcenc_ReadPulCnt(mcn, mdn);
 #elif defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
+	lockMCMSIF();
  
-	if(mode == MODE_CAPTURE) {unLockMCM(mcn, mdn); return tmp;}
+	if(mode == MODE_CAPTURE) {unLockMCMSIF(); return tmp;}
 	
 	if(mode == MODE_SSI)
 	{
 		tmp = mcssi_ReadData(mcn, mdn);
-		unLockMCM(mcn, mdn);
+		unLockMCMSIF();
 		return tmp;
 	}
 	
 	tmp = mcenc_ReadPulCnt(mcn, mdn);
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 	return tmp;
 #endif
 }
@@ -936,12 +936,12 @@ unsigned long long int Encoder::_pulseIn(uint8_t pin, uint8_t state, unsigned lo
 		}
 	}
 #elif defined (DMP_LINUX)
-    lockMCM(mcn, mdn);
+    lockMCMSIF();
 	if(state == HIGH)
 	{
 		while(1)
 		{
-			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCM(mcn, mdn); return 0L;}
+			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCMSIF(); return 0L;}
 			if(readCapStat[pin](mcn, MCSIF_MODULEB) != MCENC_CAPFIFO_EMPTY &&
 			   readCapFIFO[pin](mcn, MCSIF_MODULEB, &data) == MCPFAU_CAP_0TO1EDGE)
 				break;
@@ -949,7 +949,7 @@ unsigned long long int Encoder::_pulseIn(uint8_t pin, uint8_t state, unsigned lo
 		
 		while(1)
 		{
-			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCM(mcn, mdn); return 0L;}
+			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCMSIF(); return 0L;}
 			if(readCapStat[pin](mcn, MCSIF_MODULEB) != MCENC_CAPFIFO_EMPTY)
 			{
 				stat = readCapFIFO[pin](mcn, MCSIF_MODULEB, &data);
@@ -967,7 +967,7 @@ unsigned long long int Encoder::_pulseIn(uint8_t pin, uint8_t state, unsigned lo
 	{
 		while(1)
 		{
-			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCM(mcn, mdn); return 0L;}
+			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCMSIF(); return 0L;}
 			if(readCapStat[pin](mcn, MCSIF_MODULEB) != MCENC_CAPFIFO_EMPTY &&
 			   readCapFIFO[pin](mcn, MCSIF_MODULEB, &data) == MCPFAU_CAP_1TO0EDGE)
 				break;
@@ -975,7 +975,7 @@ unsigned long long int Encoder::_pulseIn(uint8_t pin, uint8_t state, unsigned lo
 		
 		while(1)
 		{
-			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCM(mcn, mdn); return 0L;}
+			if(timeout != 0L && timer_NowTime() > _timeout) {unLockMCMSIF(); return 0L;}
 			if(readCapStat[pin](mcn, MCSIF_MODULEB) != MCENC_CAPFIFO_EMPTY)
 			{
 				stat = readCapFIFO[pin](mcn, MCSIF_MODULEB, &data);
@@ -1010,7 +1010,7 @@ void Encoder::setInputPolarity(bool pinA, bool pinB, bool pinZ) {
 	if(mode == MODE_NOSET || mode == MODE_CAPTURE || mode == MODE_SSI) return;
 
 #if defined (DMP_LINUX)
-	lockMCM(mcn, mdn);
+	lockMCMSIF();
 #endif
 
 	mcsif_Disable(mcn, mdn);
@@ -1151,7 +1151,7 @@ void Encoder::setInputPolarity(bool pinA, bool pinB, bool pinZ) {
 	mcsif_Enable(mcn, mdn);
 
 #if defined (DMP_LINUX)
-	unLockMCM(mcn, mdn);
+	unLockMCMSIF();
 #endif
 }
 

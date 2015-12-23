@@ -12,10 +12,9 @@
  */
 
 #include "SPI.h"
-#include <pthread.h>
 
 SPIClass SPI;
-pthread_spinlock_t internal_lock;
+OSSPIN internal_lock;
 
 uint8_t SPIClass::initialized = 0;
 uint8_t SPIClass::interruptMode = 0;
@@ -83,7 +82,7 @@ void SPIClass::begin()
 	pinMode(SS, OUTPUT);
 	digitalWrite(SS, HIGH);
 	
-	pthread_spin_init(&internal_lock, PTHREAD_PROCESS_SHARED);
+	OSSPININIT(internal_lock);
   }
   initialized++; // reference count
 }
@@ -142,17 +141,17 @@ void SPIClass::end() {
 void SPIClass::usingInterrupt(uint8_t interruptNumber)
 {
   if(interruptNumber > 63) return;
-  pthread_spin_lock(&internal_lock);
+  OSSPINLOCK(internal_lock);
   interrupt_flag |= (1LL<<interruptNumber);
-  pthread_spin_unlock(&internal_lock);
+  OSSPINUNLOCK(internal_lock);
 }
 
 void SPIClass::notUsingInterrupt(uint8_t interruptNumber)
 {
   if(interruptNumber > 63) return;
-  pthread_spin_lock(&internal_lock);
+  OSSPINLOCK(internal_lock);
   interrupt_flag &= ~(1LL<<interruptNumber);
-  pthread_spin_unlock(&internal_lock);
+  OSSPINUNLOCK(internal_lock);
 }
 
 void SPIClass::setBitOrder(uint8_t bitOrder)

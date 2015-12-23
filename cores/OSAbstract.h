@@ -16,33 +16,36 @@
 	#define OSSPINUNLOCK(var)
 #endif
 
-void spinLockInit(void);
+DMPAPI(void) spinLockInit(void);
 
-int lockGPIO(int n);
-int tryLockGPIO(int n);
-int unLockGPIO(int n);
+DMPAPI(int) lockGPIO(int n);
+DMPAPI(int) tryLockGPIO(int n);
+DMPAPI(int) unLockGPIO(int n);
 
-int lockADC(void);
-int tryLockADC(void);
-int unLockADC(void);
+DMPAPI(int) lockADC(void);
+DMPAPI(int) tryLockADC(void);
+DMPAPI(int) unLockADC(void);
 
-int lockMCM(int mc, int md);
-int tryLockMCM(int mc, int md);
-int unLockMCM(int mc, int md);
+DMPAPI(int) lockMCM(int mc, int md);
+DMPAPI(int) tryLockMCM(int mc, int md);
+DMPAPI(int) unLockMCM(int mc, int md);
 
-int lockMCMGENAL(void);
-int tryLockMCMGENAL(void);
-int unLockMCMGENAL(void);
+DMPAPI(int) lockMCMGENAL(void);
+DMPAPI(int) tryLockMCMGENAL(void);
+DMPAPI(int) unLockMCMGENAL(void);
 
-int lockMCMSIF(void);
-int tryLockMCMSIF(void);
-int unLockMCMSIF(void);
+DMPAPI(int) lockMCMSIF(void);
+DMPAPI(int) tryLockMCMSIF(void);
+DMPAPI(int) unLockMCMSIF(void);
 
 #define MCGENAL    (12)
 #define MCSIF      (13)
 
-int lockSPI(void);
-int tryLockSPI(void);
-int unLockSPI(void);
+DMPAPI(int) lockSPI(void);
+DMPAPI(int) tryLockSPI(void);
+DMPAPI(int) unLockSPI(void);
 
+DMPAPI(int) lockI2C(void);
+DMPAPI(int) tryLockI2C(void);
+DMPAPI(int) unLockI2C(void);
 #endif

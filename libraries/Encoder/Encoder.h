@@ -23,7 +23,7 @@
 #ifndef __ENC86_H__
 #define __ENC86_H__
 
-#include <Arduino.h>
+#include "Arduino.h"
 
 // Encoder mode
 #define MODE_NOSET       (0xFF)

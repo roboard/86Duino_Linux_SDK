@@ -30,8 +30,6 @@
 
 #if defined (DMP_DOS_DJGPP)
   #include "irq.h"
-#elif defined (DMP_LINUX)
-  #include <pthread.h>
 #endif
 
 TimerOne Timer1;

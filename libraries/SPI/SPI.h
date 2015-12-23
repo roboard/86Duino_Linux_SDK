@@ -14,11 +14,7 @@
 #ifndef _SPI_H_INCLUDED
 #define _SPI_H_INCLUDED
 
-#include <Arduino.h>
-
-#if defined (DMP_LINUX)
-	#include "OSAbstract.h"
-#endif
+#include "Arduino.h"
 
 #ifndef LSBFIRST
 #define LSBFIRST 0

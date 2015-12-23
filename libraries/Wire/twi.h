@@ -1,6 +1,7 @@
-#include "Arduino.h"
 #ifndef twi_h
 #define twi_h
+
+  #include "Arduino.h"
 
   #ifndef TWI_BUFFER_LENGTH
   #define TWI_BUFFER_LENGTH 32

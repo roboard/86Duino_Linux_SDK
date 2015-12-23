@@ -2,10 +2,7 @@
 #include "Arduino.h"
 #include "mcm.h"
 
-#if defined (DMP_LINUX)
-#include <pthread.h>
-#include "OSAbstract.h"
-#elif defined (DMP_DOS_DJGPP)
+#if defined (DMP_DOS_DJGPP)
 #include "irq.h"
 #include <stdio.h>
 #endif
@@ -34,7 +31,7 @@ struct interrupt {
 
 struct interrupt_desc {
     pthread_t thread;
-    pthread_spinlock_t spinlock;
+    OSSPIN spinlock;
 	struct interrupt intr[INTERRUPTS];
 };
 
@@ -80,7 +77,7 @@ void *intrMain(void* pargs)
 	int32_t m, n;
     while(true)
     {
-        pthread_spin_lock(&idc.spinlock);
+        OSSPINLOCK(idc.spinlock);
         for(int i = 0; i < INTERRUPTS; i++)
         {
 			if(idc.intr[i].used == false)
@@ -129,15 +126,15 @@ void *intrMain(void* pargs)
 				}
             }
         }
-        pthread_spin_unlock(&idc.spinlock);
-		pthread_spin_lock(&idc.spinlock);
+        OSSPINUNLOCK(idc.spinlock);
+		OSSPINLOCK(idc.spinlock);
 		for(int i = 0; i < INTERRUPTS; i++)
 		{
 			if(do_callback[i] && idc.intr[i].used)
 				idc.intr[i].callback();
 			do_callback[i] = false;
 		}
-		pthread_spin_unlock(&idc.spinlock);
+		OSSPINUNLOCK(idc.spinlock);
 	}
     pthread_exit(NULL);
 }
@@ -257,7 +254,7 @@ DMP_INLINE(void) mcmsif_init(int32_t mc)
 #if defined (DMP_LINUX)
 DMP_INLINE(int) addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, uint32_t timeout)
 {
-	pthread_spin_lock(&idc.spinlock);
+	OSSPINLOCK(idc.spinlock);
 
 	idc.intr[interruptNum].used = true;
     idc.intr[interruptNum].callback = callback;
@@ -309,14 +306,14 @@ DMP_INLINE(int) addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mo
 		unLockMCMSIF();
 	}
 	
-	pthread_spin_unlock(&idc.spinlock);
+	OSSPINUNLOCK(idc.spinlock);
 }
 #endif
 
 DMPAPI(int) interrupt_init(void)
 {
 	#if defined (DMP_LINUX)
-    pthread_spin_init(&idc.spinlock, 0);
+    OSSPININIT(idc.spinlock);
     for(int i = 0; i < INTERRUPTS; i++)
 		idc.intr[i].used = false;
     int err = pthread_create(&idc.thread, NULL, intrMain, NULL);
@@ -464,14 +461,14 @@ DMPAPI(void) detachInterrupt(uint8_t interruptNum)
 	if(interruptNum > MAX_INTR_NUM + 1)
 		return;
 
-	pthread_spin_lock(&idc.spinlock);
+	OSSPINLOCK(idc.spinlock);
 	idc.intr[interruptNum].used = false;
 	uint8_t mc = interruptNum/3;
 	lockMCMSIF();
 	if(mc < 4 && !(idc.intr[mc*3].used) && !(idc.intr[mc*3 + 1].used) && !(idc.intr[mc*3 + 2].used))
 		mcmsif_close(mc);
 	unLockMCMSIF();
-	pthread_spin_unlock(&idc.spinlock);
+	OSSPINUNLOCK(idc.spinlock);
 	#elif defined (DMP_DOS_DJGPP)
 	int i;
 	mc = interruptNum/3;

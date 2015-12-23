@@ -1,5 +1,5 @@
 #include "dmpcfg.h"
-#include <pthread.h>
+#include "OSAbstract.h"
 
 #define GPIONUM    (10)
 pthread_spinlock_t LKGPIO0;
@@ -38,97 +38,176 @@ pthread_spinlock_t mcm_lock_arary[MCM_MCMD_NUM] = {LKMC0MD0, LKMC0MD1, LKMC0MD2,
                                               LKMC2MD1, LKMC2MD2, LKMC3MD0, LKMC3MD1, LKMC3MD2};
 
 pthread_spinlock_t LKSPI;
+pthread_spinlock_t LKI2C;
 											  
-void spinLockInit(void) {
+DMPAPI(void) spinLockInit(void) {
+#if defined (DMP_LINUX)
 	for(int i=0; i<GPIONUM; i++) pthread_spin_init(&gpio_lock_arary[i], PTHREAD_PROCESS_SHARED);
     pthread_spin_init(&LKADC, PTHREAD_PROCESS_SHARED);
     for(int i=0; i<MCM_MCMD_NUM; i++) pthread_spin_init(&mcm_lock_arary[i], PTHREAD_PROCESS_SHARED);
     pthread_spin_init(&LKMCGENAL, PTHREAD_PROCESS_SHARED);
     pthread_spin_init(&LKMCSIF, PTHREAD_PROCESS_SHARED);
 	pthread_spin_init(&LKSPI, PTHREAD_PROCESS_SHARED);
+	pthread_spin_init(&LKI2C, PTHREAD_PROCESS_SHARED);
 	// ... Other spinlock
+#endif
 }
 
-int lockGPIO(int n) {
+DMPAPI(int) lockGPIO(int n) {
+#if defined (DMP_LINUX)
 	return pthread_spin_lock(&gpio_lock_arary[n]);
+#endif
+	return 0;
 }
 
-int tryLockGPIO(int n) {
+DMPAPI(int) tryLockGPIO(int n) {
+#if defined (DMP_LINUX)
 	return pthread_spin_trylock(&gpio_lock_arary[n]);
+#endif
+	return 0;
 }
 
-int unLockGPIO(int n) {
+DMPAPI(int) unLockGPIO(int n) {
+#if defined (DMP_LINUX)
 	return pthread_spin_unlock(&gpio_lock_arary[n]);
+#endif
+	return 0;
 }
 
-int lockADC(void) {
+DMPAPI(int) lockADC(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_lock(&LKADC);
+#endif
+	return 0;
 }
 
-int tryLockADC(void) {
+DMPAPI(int) tryLockADC(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_trylock(&LKADC);
+#endif
+	return 0;
 }
 
-int unLockADC(void) {
+DMPAPI(int) unLockADC(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_unlock(&LKADC);
+#endif
+	return 0;
 }
 
-int lockMCM(int mc, int md) {
+DMPAPI(int) lockMCM(int mc, int md) {
+#if defined (DMP_LINUX)
 	int index;
 	if(mc < 0 || mc > 3 || md < 0 || md > 2) return 0xffff;
 
 	index = mc*3 + md;
 	return pthread_spin_lock(&mcm_lock_arary[index]);
+#endif
+	return 0;
 }
 
-int tryLockMCM(int mc, int md) {
+DMPAPI(int) tryLockMCM(int mc, int md) {
+#if defined (DMP_LINUX)
 	int index;
 	if(mc < 0 || mc > 3 || md < 0 || md > 2) return 0xffff;
 
 	index = mc*3 + md;
 	return pthread_spin_trylock(&mcm_lock_arary[index]);
+#endif
+	return 0;
 }
 
-int unLockMCM(int mc, int md) {
+DMPAPI(int) unLockMCM(int mc, int md) {
+#if defined (DMP_LINUX)
     int index;
 	if(mc < 0 || mc > 3 || md < 0 || md > 2) return 0xffff;
 
 	index = mc*3 + md;
 	return pthread_spin_unlock(&mcm_lock_arary[index]);
+#endif
+	return 0;
 }
 
-int lockMCMGENAL(void) {
+DMPAPI(int) lockMCMGENAL(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_lock(&LKMCGENAL);
+#endif
+	return 0;
 }
 
-int tryLockMCMGENAL(void) {
+DMPAPI(int) tryLockMCMGENAL(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_trylock(&LKMCGENAL);
+#endif
+	return 0;
 }
 
-int unLockMCMGENAL(void) {
+DMPAPI(int) unLockMCMGENAL(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_unlock(&LKMCGENAL);
+#endif
+	return 0;
 }
 
-int lockMCMSIF(void) {
+DMPAPI(int) lockMCMSIF(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_lock(&LKMCSIF);
+#endif
+	return 0;
 }
 
-int tryLockMCMSIF(void) {
+DMPAPI(int) tryLockMCMSIF(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_trylock(&LKMCSIF);
+#endif
+	return 0;
 }
 
-int unLockMCMSIF(void) {
+DMPAPI(int) unLockMCMSIF(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_unlock(&LKMCSIF);
+#endif
+	return 0;
 }
 
-int lockSPI(void) {
+DMPAPI(int) lockSPI(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_lock(&LKSPI);
+#endif
+	return 0;
 }
 
-int tryLockSPI(void) {
+DMPAPI(int) tryLockSPI(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_trylock(&LKSPI);
+#endif
+	return 0;
 }
 
-int unLockSPI(void) {
+DMPAPI(int) unLockSPI(void) {
+#if defined (DMP_LINUX)
 	return pthread_spin_unlock(&LKSPI);
+#endif
+	return 0;
+}
+
+DMPAPI(int) lockI2C(void) {
+#if defined (DMP_LINUX)
+	return pthread_spin_lock(&LKI2C);
+#endif
+	return 0;
+}
+
+DMPAPI(int) tryLockI2C(void) {
+#if defined (DMP_LINUX)
+	return pthread_spin_trylock(&LKI2C);
+#endif
+	return 0;
+}
+
+DMPAPI(int) unLockI2C(void) {
+#if defined (DMP_LINUX)
+	return pthread_spin_unlock(&LKI2C);
+#endif
+	return 0;
 }

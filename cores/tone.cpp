@@ -1,9 +1,8 @@
 #include "dmpcfg.h"
-#include <Arduino.h>
+#include "Arduino.h"
 
 #if defined (DMP_LINUX)
 #include <sys/resource.h>
-#include <pthread.h>
 #elif defined (DMP_DOS_DJGPP)
 #include "mcm.h"
 #include "irq.h"
@@ -26,7 +25,7 @@ long loopTime;
 unsigned long time1;
 unsigned long time2;
 unsigned long toneDuration = 0;
-pthread_spinlock_t t_lock;
+OSSPIN t_lock;
 bool init_t_lock = false;
 
 void *toneHandler(void *prgs)
@@ -253,13 +252,13 @@ DMPAPI(void) tone(uint8_t _pin, unsigned int frequency, unsigned long duration)
 
 	if(init_t_lock == false)
 	{
-		pthread_spin_init(&t_lock, 0);
+		OSSPININIT(t_lock);
 		init_t_lock = true;
 	}
 
-	pthread_spin_lock(&t_lock);
+	OSSPINLOCK(t_lock);
 	int tmpControl = ++thread_control;
-	pthread_spin_unlock(&t_lock);
+	OSSPINUNLOCK(t_lock);
 
 	pthread_t toneThread;
 	struct tone_param *tparam;
@@ -306,9 +305,9 @@ DMPAPI(void) noTone(uint8_t _pin)
 	if(current_pin != _pin)
 		return;
 
-	pthread_spin_lock(&t_lock);
+	OSSPINLOCK(t_lock);
 	++thread_control;
-	pthread_spin_unlock(&t_lock);
+	OSSPINUNLOCK(t_lock);
 
 	current_pin = -1;
 #elif defined (DMP_DOS_DJGPP)

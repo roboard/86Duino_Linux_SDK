@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "Arduino.h"
 
 #include "HardwareSerial.h"
 
@@ -47,7 +46,7 @@ HardwareSerial::HardwareSerial(int com_port, unsigned long com_baudrate, unsigne
 	txtimeout   = com_txtimeout;
 	peek_stored = false;
 	hadbegin    = false;
-	pthread_spin_init(&beginLock, PTHREAD_PROCESS_SHARED);
+	OSSPININIT(beginLock);
 }
 
 void HardwareSerial::setDeviceName(char* name) {
@@ -69,14 +68,14 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config) {
 void HardwareSerial::begin(unsigned long baud, uint8_t config, int comtype) {
     unsigned short crossbar_ioaddr = 0;
 
-	pthread_spin_lock(&beginLock);
+	OSSPINLOCK(beginLock);
 	
-	if(hadbegin == true) {pthread_spin_unlock(&beginLock); return;}
+	if(hadbegin == true) {OSSPINUNLOCK(beginLock); return;}
 
 	if (com_Init(port) == false)
 	{
 		printf("COM init fail!!\n");
-		pthread_spin_unlock(&beginLock);
+		OSSPINUNLOCK(beginLock);
 		return;
 	}
 
@@ -128,7 +127,7 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config, int comtype) {
 		io_outpb(crossbar_ioaddr + COM3_RX, 0x08);
 	}
     hadbegin = true;
-	pthread_spin_unlock(&beginLock);
+	OSSPINUNLOCK(beginLock);
 }
 
 void HardwareSerial::end() {

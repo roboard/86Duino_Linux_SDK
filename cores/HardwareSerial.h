@@ -26,7 +26,7 @@
 
 #include "com.h"
 #include "Stream.h"
-#include <pthread.h>
+#include "Arduino.h"
 
 class HardwareSerial : public Stream
 {
@@ -38,7 +38,7 @@ class HardwareSerial : public Stream
     unsigned long txtimeout;
     bool peek_stored;
     int peek_val;
-	pthread_spinlock_t beginLock;
+	OSSPIN beginLock;
   public:
     bool hadbegin;
     HardwareSerial(int com_port, unsigned long com_buadrate, unsigned char com_format, unsigned long com_rxtimeout, unsigned long com_txtimeout);

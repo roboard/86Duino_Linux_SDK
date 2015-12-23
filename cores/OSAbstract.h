@@ -1,6 +1,21 @@
 #ifndef _OSABSTRACT_h
 #define _OSABSTRACT_h
 
+#if defined (DMP_LINUX)
+	#include <pthread.h>
+	#define OSSPIN pthread_spinlock_t
+	#define OSSPININIT(var) pthread_spin_init(&var, PTHREAD_PROCESS_SHARED)
+	#define OSSPINLOCK(var) pthread_spin_lock(&var)
+	#define OSSPINTRYLOCK(var) pthread_spin_trylock(&var)
+	#define OSSPINUNLOCK(var) pthread_spin_unlock(&var)
+#else
+	#define OSSPIN (int)
+	#define OSSPININIT(var)
+	#define OSSPINLOCK(var)
+	#define OSSPINTRYLOCK(var)
+	#define OSSPINUNLOCK(var)
+#endif
+
 void spinLockInit(void);
 
 int lockGPIO(int n);

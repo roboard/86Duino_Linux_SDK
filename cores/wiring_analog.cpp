@@ -29,10 +29,6 @@
 #include "dmpcfg.h"
 #include "mcm.h"
 
-#if defined (DMP_LINUX)
-    #include "OSAbstract.h"
-#endif
-
 #define BaseAddress (0xfe00)
 #define TimeOut		(1000)
 #define MCM_MC      (0)

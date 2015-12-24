@@ -1,5 +1,5 @@
 IFLAGS    = -I./cores
-OBJFILES  = io.o irq.o err.o wiring_digital.o wiring_analog.o mcm.o wiring_pulse.o wiring_shift.o wdt.o main.o wiring.o WMath.o WString.o Stream.o Print.o vortex86.o queue.o IPAddress.o i2c.o i2cex.o OSAbstract.o WInterrupts.o HardwareSerial.o com.o tone.o
+OBJFILES  = io.o irq.o err.o wiring_digital.o wiring_analog.o mcm.o wiring_pulse.o wiring_shift.o wdt.o main.o wiring.o WMath.o WString.o Stream.o Print.o vortex86.o queue.o IPAddress.o i2c.o i2cex.o OSAbstract.o WInterrupts.o HardwareSerial.o com.o tone.o dtostrf.o eeprom.o
 SRCFILES  = 86Duino.o
 EXEFILES  = 86Duino
 LIBFILES  = -lstdc++ -lrt -lpthread
@@ -26,6 +26,12 @@ clean :
 	$(CXX) -c $< $(IFLAGS) $(THIRD_LIB_INCLUDE) $(OPTIONS)
 
 %.o: cores/%.cpp
+	$(CXX) -c $< $(IFLAGS) $(OPTIONS)
+
+%.o: cores/avr/%.cpp
+	$(CXX) -c $< $(IFLAGS) $(OPTIONS)
+
+%.o: cores/avr/%.c
 	$(CXX) -c $< $(IFLAGS) $(OPTIONS)
 
 %.o: $(THIRD_LIB_PATH)/%.cpp

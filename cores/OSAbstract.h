@@ -48,4 +48,8 @@ DMPAPI(int) unLockSPI(void);
 DMPAPI(int) lockI2C(void);
 DMPAPI(int) tryLockI2C(void);
 DMPAPI(int) unLockI2C(void);
+
+DMPAPI(int) lockCMOS(void);
+DMPAPI(int) tryLockCMOS(void);
+DMPAPI(int) unLockCMOS(void);
 #endif

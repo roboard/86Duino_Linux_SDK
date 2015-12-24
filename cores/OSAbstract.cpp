@@ -1,6 +1,8 @@
 #include "dmpcfg.h"
 #include "OSAbstract.h"
 
+#if defined (DMP_LINUX)
+
 #define GPIONUM    (10)
 pthread_spinlock_t LKGPIO0;
 pthread_spinlock_t LKGPIO1;
@@ -39,7 +41,10 @@ pthread_spinlock_t mcm_lock_arary[MCM_MCMD_NUM] = {LKMC0MD0, LKMC0MD1, LKMC0MD2,
 
 pthread_spinlock_t LKSPI;
 pthread_spinlock_t LKI2C;
-											  
+pthread_spinlock_t LKCMOS;
+
+#endif
+
 DMPAPI(void) spinLockInit(void) {
 #if defined (DMP_LINUX)
 	for(int i=0; i<GPIONUM; i++) pthread_spin_init(&gpio_lock_arary[i], PTHREAD_PROCESS_SHARED);
@@ -49,6 +54,7 @@ DMPAPI(void) spinLockInit(void) {
     pthread_spin_init(&LKMCSIF, PTHREAD_PROCESS_SHARED);
 	pthread_spin_init(&LKSPI, PTHREAD_PROCESS_SHARED);
 	pthread_spin_init(&LKI2C, PTHREAD_PROCESS_SHARED);
+	pthread_spin_init(&LKCMOS, PTHREAD_PROCESS_SHARED);
 	// ... Other spinlock
 #endif
 }
@@ -208,6 +214,27 @@ DMPAPI(int) tryLockI2C(void) {
 DMPAPI(int) unLockI2C(void) {
 #if defined (DMP_LINUX)
 	return pthread_spin_unlock(&LKI2C);
+#endif
+	return 0;
+}
+
+DMPAPI(int) lockCMOS(void) {
+#if defined (DMP_LINUX)
+	return pthread_spin_unlock(&LKCMOS);
+#endif
+	return 0;
+}
+
+DMPAPI(int) tryLockCMOS(void) {
+#if defined (DMP_LINUX)
+	return pthread_spin_trylock(&LKCMOS);
+#endif
+	return 0;
+}
+
+DMPAPI(int) unLockCMOS(void) {
+#if defined (DMP_LINUX)
+	return pthread_spin_unlock(&LKCMOS);
 #endif
 	return 0;
 }

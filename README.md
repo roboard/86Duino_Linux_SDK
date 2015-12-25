@@ -72,7 +72,7 @@ Under L86duntu (based on Lubuntu 12.04), we can write programs with 86Duino Linu
 |      MsTimer2      |    X    |          |
 |       Time86       |    X    |          |
 |      FreeIMU1      |    O    | Compiled |
-|       OneWire      |    O    | Compiled |
+|       OneWire      |    X    |          |
 |  CapacitiveSensor  |    O    | Compiled |
 |      Irremote      |    X    |          |
 |     SpiderL3S      |    X    |          |

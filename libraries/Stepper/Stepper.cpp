@@ -64,15 +64,9 @@ Stepper::Stepper(int number_of_steps, int motor_pin_1, int motor_pin_2)
   this->motor_pin_1 = motor_pin_1;
   this->motor_pin_2 = motor_pin_2;
 
-#if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)
   // setup the pins on the microcontroller:
   pinMode(this->motor_pin_1, OUTPUT);
   pinMode(this->motor_pin_2, OUTPUT);
-#elif defined (DMP_LINUX)
-  io_Init();
-  io_outpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_1]/8), io_inpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_1]/8))|(1<<(pinMap[this->motor_pin_1]%8))); 
-  io_outpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_2]/8), io_inpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_2]/8))|(1<<(pinMap[this->motor_pin_2]%8))); 
-#endif
 
   // When there are only 2 pins, set the other two to 0:
   this->motor_pin_3 = 0;
@@ -102,19 +96,12 @@ Stepper::Stepper(int number_of_steps, int motor_pin_1, int motor_pin_2, int moto
   this->motor_pin_3 = motor_pin_3;
   this->motor_pin_4 = motor_pin_4;
 
-#if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP) 
   // setup the pins on the microcontroller:
   pinMode(this->motor_pin_1, OUTPUT);
   pinMode(this->motor_pin_2, OUTPUT);
   pinMode(this->motor_pin_3, OUTPUT);
   pinMode(this->motor_pin_4, OUTPUT);
-#elif defined (DMP_LINUX)
-  io_Init();
-  io_outpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_1]/8), io_inpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_1]/8))|(1<<(pinMap[this->motor_pin_1]%8))); 
-  io_outpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_2]/8), io_inpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_2]/8))|(1<<(pinMap[this->motor_pin_2]%8))); 
-  io_outpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_3]/8), io_inpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_3]/8))|(1<<(pinMap[this->motor_pin_3]%8))); 
-  io_outpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_4]/8), io_inpb(GPIODIRBASE + 4*(pinMap[this->motor_pin_4]/8))|(1<<(pinMap[this->motor_pin_4]%8))); 
-#endif
+
   // pin_count is used by the stepMotor() method:  
   this->pin_count = 4;  
 }

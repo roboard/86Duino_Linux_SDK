@@ -1,5 +1,7 @@
 #include "dmpcfg.h"
 #include "OSAbstract.h"
+#include "string.h"
+#include "stdio.h"
 
 #if defined (DMP_LINUX)
 
@@ -47,15 +49,39 @@ pthread_spinlock_t LKCMOS;
 
 DMPAPI(void) spinLockInit(void) {
 #if defined (DMP_LINUX)
-	for(int i=0; i<GPIONUM; i++) pthread_spin_init(&gpio_lock_arary[i], PTHREAD_PROCESS_SHARED);
-    pthread_spin_init(&LKADC, PTHREAD_PROCESS_SHARED);
-    for(int i=0; i<MCM_MCMD_NUM; i++) pthread_spin_init(&mcm_lock_arary[i], PTHREAD_PROCESS_SHARED);
-    pthread_spin_init(&LKMCGENAL, PTHREAD_PROCESS_SHARED);
-    pthread_spin_init(&LKMCSIF, PTHREAD_PROCESS_SHARED);
-	pthread_spin_init(&LKSPI, PTHREAD_PROCESS_SHARED);
-	pthread_spin_init(&LKI2C, PTHREAD_PROCESS_SHARED);
-	pthread_spin_init(&LKCMOS, PTHREAD_PROCESS_SHARED);
+	int err = 0;
+
+	for(int i=0; i<GPIONUM; i++)
+	{
+		err = pthread_spin_init(&gpio_lock_arary[i], PTHREAD_PROCESS_SHARED);
+		if(err != 0) printf("spinLockGPIO: %s\n", strerror(err));
+	}
+	
+	err = pthread_spin_init(&LKADC, PTHREAD_PROCESS_SHARED);
+	if(err != 0) printf("spinLockADC: %s\n", strerror(err));
+
+	for(int i=0; i<MCM_MCMD_NUM; i++)
+	{
+		err = pthread_spin_init(&mcm_lock_arary[i], PTHREAD_PROCESS_SHARED);
+		if(err != 0) printf("spinLockMCMD: %s\n", strerror(err));
+	}
+	
+	err = pthread_spin_init(&LKMCGENAL, PTHREAD_PROCESS_SHARED);
+	if(err != 0) printf("spinLockMCGENAL: %s\n", strerror(err));
+	
+	err = pthread_spin_init(&LKMCSIF, PTHREAD_PROCESS_SHARED);
+	if(err != 0) printf("spinLockMCSIF: %s\n", strerror(err));
+	
+	err = pthread_spin_init(&LKSPI, PTHREAD_PROCESS_SHARED);
+	if(err != 0) printf("spinLockSPI: %s\n", strerror(err));
+	
+	err = pthread_spin_init(&LKI2C, PTHREAD_PROCESS_SHARED);
+	if(err != 0) printf("spinLockI2C: %s\n", strerror(err));
+	
+	err = pthread_spin_init(&LKCMOS, PTHREAD_PROCESS_SHARED);
+	if(err != 0) printf("spinLockCMOS: %s\n", strerror(err));
 	// ... Other spinlock
+
 #endif
 }
 

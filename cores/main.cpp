@@ -1,21 +1,21 @@
 #include "Arduino.h"
 #include <stdlib.h>
 #include <stdio.h>
-// Linux
-//#include <conio.h>
-//#include <process.h>
-#include <signal.h>
-#include "irq.h"
-//#include <sys/exceptn.h>
 
-//unsigned _stklen = 4096 * 1024;
+#if defined (DMP_DOS_DJGPP)
+	#include <conio.h>
+	#include <process.h>
+	#include <signal.h>
+	#include "irq.h"
+	#include <sys/exceptn.h>
+#elif defined (DMP_LINUX)
+	#include <signal.h>
+	#include "irq.h"
+#endif
 
-// Weak empty variant initialization function.
-// May be redefined by variant files.
-void initVariant() __attribute__((weak));
-void initVariant() { }
+#if defined (DMP_DOS_DJGPP)
+unsigned _stklen = 4096 * 1024;
 
-/*
 // Error process
 int led = 13;
 #define LONG_TIME    (1000L)
@@ -73,15 +73,22 @@ void _86Duino_error_process(int num) {
 		error_led_blink();
 	}
 }
+#endif
+
+// Weak empty variant initialization function.
+// May be redefined by variant files.
+void initVariant() __attribute__((weak));
+void initVariant() { }
 
 static __attribute__((constructor(101))) void _f_init()
 {
 	init();
-	
+#if defined (DMP_DOS_DJGPP)
 	signal(SIGSEGV, _86Duino_error_process);
 	signal(SIGFPE, _86Duino_error_process);
+#endif
 }
-*/
+
 
 //DPMI_MEMORY_ALL_LOCK(0)
 int main(void)

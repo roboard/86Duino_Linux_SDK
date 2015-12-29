@@ -18,6 +18,8 @@
 
   (If you need a commercial license, please contact soc@dmp.com.tw 
    to get more information.)
+   
+   Modified by CJ Wu on 29 Dec 2015
 */
 
 #include "utility/SwsSock.h"

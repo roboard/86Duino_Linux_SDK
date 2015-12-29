@@ -27,6 +27,7 @@
  *
  * Modified by Denny Yang on 25 Sep 2013:
  *    - making to compile in x86 for Intel Galileo Arduino IDE
+ * Modified by CJ Wu on 29 Dec 2015
  */
 
 #include "Ethernet.h"

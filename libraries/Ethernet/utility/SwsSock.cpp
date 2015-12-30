@@ -22,6 +22,7 @@
 
 #include "SwsSock.h"
 
+#if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)
 #include "sws_cfg.h"
 #include "sws_dlnk.h"
 
@@ -262,6 +263,6 @@ void SwsSockClass::init()
 		return;
 	}
 }
-
+#endif
 
 

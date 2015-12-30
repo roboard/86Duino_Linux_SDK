@@ -1,5 +1,5 @@
 #include "io.h"
-#include "eeprom.h"
+#include "avr/eeprom.h"
 
 #define EEPROMSIZE_BANK0 (200)
 

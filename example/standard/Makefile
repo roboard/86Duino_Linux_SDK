@@ -1,7 +1,7 @@
 CC := gcc
 CFLAGS := -c -w -g -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -O1 -DARDUINO=158 -D_86DUINO=210
 LINK_FLAGS := -w -Wl,--gc-sections -O1
-86DUINO_DIR := /home/dmp/tmp/real86
+86DUINO_DIR := ../..
 
 LIB_PATH := $(86DUINO_DIR)/cores
 LIB_INCLUDE := -I$(86DUINO_DIR)/cores
@@ -31,7 +31,7 @@ $(LIB):
 	make -C $(LIB_PATH)
 
 $(TARGETS): $(OBJS) $(LIB_PATH)/$(LIB) $(LIB_PATH)/$(INIT_OBJS)
-	$(CC) $(LINK_FLAGS) -Wl,--start-group $^ $(THIRD_LIB) $(EXTEN_LIB) -lstdc++ -pthread -lrt -Wl,--end-group -o $@ $(THIRD_LIB_PATH) 
+	$(CC) $(LINK_FLAGS) -Wl,--start-group $^ $(THIRD_LIB) $(EXTEN_LIB) -Wl,--end-group -o $@ $(THIRD_LIB_PATH) -lstdc++ -pthread -lrt
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $< -o $@ $(LIB_INCLUDE) $(THIRD_LIB_INCLUDE)

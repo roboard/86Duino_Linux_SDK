@@ -34,8 +34,6 @@ int main()
 {
   unsigned long blinkCopy = 0;  // holds a copy of the blinkCount
 
-  init();
-  interrupt_init();
   OSSPININIT(exspin);
 
   pinMode(led, OUTPUT);

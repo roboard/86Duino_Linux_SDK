@@ -25,5 +25,5 @@ $(TARGETS): $(OBJS)
 %.o: %.cpp
 	$(CC) $(CFLAGS) $< -o $@ -I $(INCLUDE)
 
-#include $(OBJS:.o=.d)
+include $(OBJS:.o=.d)
 

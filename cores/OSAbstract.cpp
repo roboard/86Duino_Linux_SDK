@@ -17,8 +17,7 @@ pthread_spinlock_t LKGPIO7;
 pthread_spinlock_t LKGPIO8;
 pthread_spinlock_t LKGPIO9;
 
-pthread_spinlock_t gpio_lock_arary[GPIONUM] = {LKGPIO0, LKGPIO1, LKGPIO2, LKGPIO3, LKGPIO4,
-                                       LKGPIO5, LKGPIO6, LKGPIO7, LKGPIO8, LKGPIO9};
+pthread_spinlock_t gpio_lock_array[GPIONUM];
 
 pthread_spinlock_t LKADC;
 
@@ -38,8 +37,7 @@ pthread_spinlock_t LKMC3MD2;
 pthread_spinlock_t LKMCGENAL;
 pthread_spinlock_t LKMCSIF;
 
-pthread_spinlock_t mcm_lock_arary[MCM_MCMD_NUM] = {LKMC0MD0, LKMC0MD1, LKMC0MD2, LKMC1MD0, LKMC1MD1, LKMC1MD2, LKMC2MD0,
-                                              LKMC2MD1, LKMC2MD2, LKMC3MD0, LKMC3MD1, LKMC3MD2};
+pthread_spinlock_t mcm_lock_arary[MCM_MCMD_NUM];
 
 pthread_spinlock_t LKSPI;
 pthread_spinlock_t LKI2C;
@@ -50,10 +48,20 @@ pthread_spinlock_t LKCMOS;
 DMPAPI(void) spinLockInit(void) {
 #if defined (DMP_LINUX)
 	int err = 0;
+	
+	gpio_lock_array[0] = LKGPIO0; gpio_lock_array[1] = LKGPIO1; gpio_lock_array[2] = LKGPIO2;
+	gpio_lock_array[3] = LKGPIO3; gpio_lock_array[4] = LKGPIO4; gpio_lock_array[5] = LKGPIO5;
+	gpio_lock_array[6] = LKGPIO6; gpio_lock_array[7] = LKGPIO7; gpio_lock_array[8] = LKGPIO8;
+	gpio_lock_array[9] = LKGPIO9;
+	
+	mcm_lock_arary[0] = LKMC0MD0; mcm_lock_arary[1] = LKMC0MD1; mcm_lock_arary[2] = LKMC0MD2;
+	mcm_lock_arary[3] = LKMC1MD0; mcm_lock_arary[4] = LKMC1MD1; mcm_lock_arary[5] = LKMC1MD2;
+	mcm_lock_arary[6] = LKMC2MD0; mcm_lock_arary[7] = LKMC2MD1; mcm_lock_arary[8] = LKMC2MD2;
+	mcm_lock_arary[9] = LKMC3MD0; mcm_lock_arary[10] = LKMC3MD1; mcm_lock_arary[11] = LKMC3MD2;
 
 	for(int i=0; i<GPIONUM; i++)
 	{
-		err = pthread_spin_init(&gpio_lock_arary[i], PTHREAD_PROCESS_SHARED);
+		err = pthread_spin_init(&gpio_lock_array[i], PTHREAD_PROCESS_SHARED);
 		if(err != 0) printf("spinLockGPIO: %s\n", strerror(err));
 	}
 	
@@ -87,21 +95,21 @@ DMPAPI(void) spinLockInit(void) {
 
 DMPAPI(int) lockGPIO(int n) {
 #if defined (DMP_LINUX)
-	return pthread_spin_lock(&gpio_lock_arary[n]);
+	return pthread_spin_lock(&gpio_lock_array[n]);
 #endif
 	return 0;
 }
 
 DMPAPI(int) tryLockGPIO(int n) {
 #if defined (DMP_LINUX)
-	return pthread_spin_trylock(&gpio_lock_arary[n]);
+	return pthread_spin_trylock(&gpio_lock_array[n]);
 #endif
 	return 0;
 }
 
 DMPAPI(int) unLockGPIO(int n) {
 #if defined (DMP_LINUX)
-	return pthread_spin_unlock(&gpio_lock_arary[n]);
+	return pthread_spin_unlock(&gpio_lock_array[n]);
 #endif
 	return 0;
 }

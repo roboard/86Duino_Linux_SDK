@@ -54,8 +54,7 @@ the Makefile as follows:
   also be added behind the variable "THIRD_LIB_NAME". See APPENDIX.1 for a
   list that describes the relation of libraries.
 
-APPENDIX 1
-==========
+#### APPENDIX 1 ####
 
 * FreeIMU1:         Wire
 * Mirf:             SPI

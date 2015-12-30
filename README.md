@@ -1,12 +1,4 @@
-`=====================================================================================
-					   ___   __   ____        _
-					  ( _ ) / /_ |  _ \ _   _(_)_ __   ___
-					  / _ \| '_ \| | | | | | | | '_ \ / _ \
-					 | (_) | (_) | |_| | |_| | | | | | (_) |
-					  \___/ \___/|____/ \____|_|_| |_|\___/
-=====================================================================================`
-
-                             86Duino Linux SDK 1.00
+#86Duino Linux SDK 1.00
 
 INTRODUCTION
 ------------
@@ -19,25 +11,25 @@ listed in the [86Duino Language Reference](http://www.86duino.com/?page_id=2255)
 In 86Duino Linux SDK also support multi-thread for all 86Duino API and
 the following libraries:
 
-	* Ethernet
-	* Firmata
-	* GSM
-	* LiquidCrystal 
-	* SPI
-	* Stepper
-	* TFT
-	* Wire
-	* Encoder
-	* Rosserial86
-	* TimerOne
-	* FreeIMU1
-	* Adafruit Motor
-	* GLCD
-	* LCD12864
-	* RF12
-	* RF24
-	* Mirf
-	* RadioHead
+* Ethernet
+* Firmata
+* GSM
+* LiquidCrystal 
+* SPI
+* Stepper
+* TFT
+* Wire
+* Encoder
+* Rosserial86
+* TimerOne
+* FreeIMU1
+* Adafruit Motor
+* GLCD
+* LCD12864
+* RF12
+* RF24
+* Mirf
+* RadioHead
 
 HOW TO COMPILE
 --------------

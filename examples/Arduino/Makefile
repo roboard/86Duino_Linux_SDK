@@ -16,7 +16,7 @@ EXTEN_LIB :=
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %cpp,%o,$(SRCS))
-TARGETS := 86DUINO
+TARGETS := 86duino
 
 .PHONY : everything clean all $(LIB)
 

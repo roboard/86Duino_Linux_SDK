@@ -132,6 +132,7 @@ void detachInterrupt(uint8_t);
 void attachTimerInterrupt(uint8_t, void (*callback)(void), uint32_t);
 void detachTimerInterrupt(void);
 
+#if defined (DMP_DOS_BS) || defined (DMP_DOS_DJGPP)
 // wdt1 functions
 extern bool rebootByWDT;
 void wdt_enable(unsigned long nTime);
@@ -139,6 +140,7 @@ void wdt_disable(void);
 void wdt_reset(void);
 void wdt_init(void);
 bool get_wdt_timeout(void);
+#endif
 
 void setup(void);
 void loop(void);

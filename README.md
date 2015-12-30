@@ -1,4 +1,4 @@
-#86Duino Linux SDK 1.00
+#86Duino Linux SDK v1.00
 
 INTRODUCTION
 ------------

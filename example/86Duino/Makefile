@@ -1,7 +1,7 @@
 CC := gcc
 CFLAGS := -c -w -g -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -O1 -DARDUINO=158 -D_86DUINO=210
 LINK_FLAGS := -w -Wl,--gc-sections -O1
-86DUINO_DIR := ../..
+86DUINO_DIR := ~/86Duino_Linux_SDK
 
 LIB_PATH := $(86DUINO_DIR)/cores
 LIB_INCLUDE := -I$(86DUINO_DIR)/cores

@@ -1,91 +1,73 @@
-# 86Duino_Linux_SDK
-Under L86duntu (based on Lubuntu 12.04), we can write programs with 86Duino Linux SDK (based on 86Duino Coding 210) to manipulate I/Os on 86Duino. In addition, there are many useful libraries in this SDK, such as *Ethernet*, *Wire*, etc.
+=====================================================================================
+					   ___   __   ____        _
+					  ( _ ) / /_ |  _ \ _   _(_)_ __   ___
+					  / _ \| '_ \| | | | | | | | '_ \ / _ \
+					 | (_) | (_) | |_| | |_| | | | | | (_) |
+					  \___/ \___/|____/ \____|_|_| |_|\___/
+=====================================================================================
 
-## Language Reference
-|                      |           API           |    Status   |
-|:--------------------:|:-----------------------:|:-----------:|
-|      Digital I/O     |        pinMode()        |      OK     |
-|                      |      digitalWrite()     |      OK     |
-|                      |      digitalRead()      |      OK     |
-|      Analog I/O      |    analogReference()    | NO FUNCTION |
-|                      |       analogRead()      |      OK     |
-|                      |      analogWrite()      |      OK     |
-|                      |  analogReadResolution() |      OK     |
-|                      | analogWriteResolution() |      OK     |
-|                      |     cpuTemperature()    |      OK     |
-|     Advanced I/O     |          tone()         |      OK     |
-|                      |         noTone()        |      OK     |
-|                      |        shiftOut()       |      OK     |
-|                      |        shiftIn()        |      OK     |
-|                      |        pulseIn()        |      OK     |
-|         Math         |          min()          |      OK     |
-|                      |          max()          |      OK     |
-|                      |          abs()          |      OK     |
-|                      |       constrain()       |      OK     |
-|                      |          map()          |      OK     |
-|                      |          pow()          |      OK     |
-|                      |          sqrt()         |      OK     |
-|     Trigonometry     |          sin()          |      OK     |
-|                      |          cos()          |      OK     |
-|                      |          tan()          |      OK     |
-|   Random   Numbers   |       randomSeed()      |      OK     |
-|                      |         random()        |      OK     |
-|   Bits and   Bytes   |        lowByte()        |      OK     |
-|                      |        highByte()       |      OK     |
-|                      |        bitRead()        |      OK     |
-|                      |        bitWrite()       |      OK     |
-|                      |         bitSet()        |      OK     |
-|                      |        bitClear()       |      OK     |
-|                      |          bit()          |      OK     |
-| External   Interrupt |    attachInterrupt()    |      OK     |
-|                      |    detachInterrupt()    |      OK     |
-|      Interrupts      |       interrupts()      | NO FUNCTION |
-|                      |      noInterrupts()     | NO FUNCTION |
-|     Communication    |         Serial()        |      OK     |
-|                      |       Serial232()       |      OK     |
-|                      |       Serial485()       |      OK     |
-|                      |         Stream()        |      OK     |
+# 86Duino Linux SDK 1.0
 
-## Libraries
-|       Library      | Support |  Status  |
-|:------------------:|:-------:|:--------:|
-|       EEPROM       |    X    |          |
-|      Ethernet      |    O    |  Tested  |
-|       Firmata      |    O    | Compiled |
-|         GSM        |    O    |  Tested  |
-|   LiquidCrystal    |    O    |  Tested  |
-|         SD         |    X    |          |
-|       Servo        |    X    |          |
-|         SPI        |    O    |  Tested  |
-|   SoftwareSerial   |    X    |          |
-|       Stepper      |    O    | Compiled |
-|         TFT        |    O    |  Tested  |
-|        WiFi        |    X    |          |
-|        Wire        |    O    |  Tested  |
-|       Encoder      |    P    |  Tested  |
-|       CANBus       |    X    |          |
-|     Rosserial86    |    O    |  Tested  |
-|       Servo86      |    X    |          |
-|        Audio       |    X    |          |
-|       USBHost      |    X    |          |
-|      TimerOne      |    O    |  Tested  |
-|      MsTimer2      |    X    |          |
-|       Time86       |    X    |          |
-|      FreeIMU1      |    O    | Compiled |
-|       OneWire      |    X    |          |
-|  CapacitiveSensor  |    O    | Compiled |
-|      Irremote      |    X    |          |
-|     SpiderL3S      |    X    |          |
-| Adafruit   CC3000  |    X    |          |
-|   Adafruit Motor   |    O    | Compiled |
-|     UTFT/Utouch    |    O    | Compiled |
-|        GLCD        |    O    | Compiled |
-|      LCD12864      |    O    | Compiled |
-|       TLC5940      |    X    |          |
-|        RF12        |    X    |          |
-|        RF24        |    O    | Compiled |
-|        Mirf        |    O    | Compiled |
-|    VirtualWire     |    X    |          |
-|      RadioHead     |    O    | Compiled |
+INTRODUCTION
+------------
 
-* P => Partially Support
+Under L86duntu (based on Lubuntu 12.04), we can write programs with
+86Duino Linux SDK (based on 86Duino Coding 210) to manipulate I/Os on 86Duino.
+The user can include "Arduino.h" to call all 86Duino API (ex. digitalWrite)
+listed in the 86Duino Language Reference (http://www.86duino.com/?page_id=2255).
+
+In 86Duino Linux SDK also support multi-thread for all 86Duino API and
+the following libraries:
+
+	Ethernet
+	Firmata
+	GSM
+	LiquidCrystal 
+	SPI
+	Stepper
+	TFT
+	Wire
+	Encoder
+	Rosserial86
+	TimerOne
+	FreeIMU1
+	Adafruit Motor
+	GLCD
+	LCD12864
+	RF12
+	RF24
+	Mirf
+	RadioHead
+
+
+HOW TO COMPILE
+--------------
+
+Copy the Makefile in the example folder and paste it to your program folder 
+that you want to compile, and then type "make" command to compile source
+code to produce your 86Duino program (if you want to use 86Duino libraries,
+see the following "USE THIRD-PARTY LIBRARIES" section).
+
+
+USE THIRD-PARTY LIBRARIES
+-------------------------
+
+If you need to use in your program 86Duino libraries listed in the 86Duino 
+Libraries Reference (http://www.86duino.com/?page_id=2257), please modify
+the Makefile as follows:
+
+  Add the names of the libraries that you want to use behind the 
+  "THIRD_LIB_NAME" variable (ex. to add the TimerOne library to compile, you 
+  need to modify like "THIRD_LIB_NAME := TimerOne" in Makefile). Since some 
+  libraries may depend on other libraries, the names of those libraries must 
+  also be added behind the variable "THIRD_LIB_NAME". See APPENDIX.1 for a
+  list that describes the relation of libraries.
+
+APPENDIX 1
+==========
+
+FreeIMU1:         Wire
+Mirf:             SPI
+RadioHead:        SPI
+RF24:             SPI
+TFT:              SPI

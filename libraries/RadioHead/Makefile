@@ -1,33 +1,81 @@
-# Makefile
-#
-# Makefile for the RadioHead project
-#
-# Author: Mike McCauley (mikem@airspayce.com)
-# Copyright (C) 2014 Mike McCauley
-# $Id: Makefile,v 1.22 2014/08/31 01:52:00 mikem Exp mikem $
 
-PROJNAME = RadioHead
-VERSION_MAJOR = 1
-VERSION_MINOR = 37
+CC := gcc
+AR := ar
+CFLAGS := -c -w -g -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -O1 -DARDUINO=158 -D_86DUINO=210
 
-DISTFILE = $(PROJNAME)-$(VERSION_MAJOR).$(VERSION_MINOR).zip
+INCLUDE_CORE := -I../../cores -I./ -I../SPI
+OBJS := RHCRC.o RHDatagram.o RHGenericDriver.o RHGenericSPI.o RHHardwareSPI.o RHMesh.o RHNRFSPIDriver.o RHReliableDatagram.o RHRouter.o \
+ RHSPIDriver.o RHSoftwareSPI.o RH_ASK.o RH_NRF24.o RH_NRF905.o RH_RF22.o RH_RF24.o RH_RF69.o RH_RF95.o RH_Serial.o RH_TCP.o
+TARGETS := libRadioHead.a
 
-all:	versioning doxygen dist upload
+.PHONY : everything clean all
 
-# Update version numbers in RadioHead.h
-versioning:
-	sed -i.bak -e 's/RadioHead-.*\.zip/$(DISTFILE)/' RadioHead.h
-	sed -i.bak -e 's/define RH_VERSION_MAJOR.*$$/define RH_VERSION_MAJOR $(VERSION_MAJOR)/' RadioHead.h
-	sed -i.bak -e 's/define RH_VERSION_MINOR.*$$/define RH_VERSION_MINOR $(VERSION_MINOR)/' RadioHead.h
+everything: $(TARGETS)
 
-doxygen: 
-	doxygen project.cfg
+clean:
+	rm $(OBJS) $(TARGETS)
 
-ci:
-	(cd ..;ci -l `cat $(PROJNAME)/MANIFEST`)
+all: clean everything
 
-dist:	
-	(cd ..; zip $(PROJNAME)/$(DISTFILE) `cat $(PROJNAME)/MANIFEST`)
+$(TARGETS): $(OBJS)
+	$(AR) rcs $(TARGETS) $?
 
-upload:
-	rsync -avz $(DISTFILE) doc/ www.airspayce.com:public_html/mikem/arduino/$(PROJNAME)
+RHCRC.o: RHCRC.cpp RHCRC.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHDatagram.o: RHDatagram.cpp RHDatagram.h RHGenericDriver.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHGenericDriver.o: RHGenericDriver.cpp RHGenericDriver.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHGenericSPI.o: RHGenericSPI.cpp RHGenericSPI.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHHardwareSPI.o: RHHardwareSPI.cpp RHHardwareSPI.h RHGenericSPI.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHMesh.o: RHMesh.cpp RHMesh.h RHRouter.h RHReliableDatagram.h RHDatagram.h RHGenericDriver.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHNRFSPIDriver.o: RHNRFSPIDriver.cpp RHNRFSPIDriver.h RHGenericDriver.h RadioHead.h RHHardwareSPI.h RHGenericSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHReliableDatagram.o: RHReliableDatagram.cpp RHReliableDatagram.h RHDatagram.h RHGenericDriver.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHRouter.o: RHRouter.cpp RHRouter.h RHReliableDatagram.h RHDatagram.h RHGenericDriver.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHSPIDriver.o: RHSPIDriver.cpp RHSPIDriver.h RHGenericDriver.h RadioHead.h RHHardwareSPI.h RHGenericSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RHSoftwareSPI.o: RHSoftwareSPI.cpp RHSoftwareSPI.h RHGenericSPI.h RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_ASK.o: RH_ASK.cpp RH_ASK.h RHGenericDriver.h RadioHead.h RHCRC.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_NRF24.o: RH_NRF24.cpp RH_NRF24.h RHGenericSPI.h RadioHead.h RHNRFSPIDriver.h RHGenericDriver.h RHHardwareSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_NRF905.o: RH_NRF905.cpp RH_NRF905.h RHGenericSPI.h RadioHead.h RHNRFSPIDriver.h RHGenericDriver.h RHHardwareSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_RF22.o: RH_RF22.cpp RH_RF22.h RHGenericSPI.h RadioHead.h RHSPIDriver.h RHGenericDriver.h RHHardwareSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_RF24.o: RH_RF24.cpp RH_RF24.h RHGenericSPI.h RadioHead.h RHSPIDriver.h RHGenericDriver.h RHHardwareSPI.h radio_config_Si4460.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_RF69.o: RH_RF69.cpp RH_RF69.h RHGenericSPI.h RadioHead.h RHSPIDriver.h RHGenericDriver.h RHHardwareSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_RF95.o: RH_RF95.cpp RH_RF95.h RHSPIDriver.h RHGenericDriver.h RadioHead.h RHHardwareSPI.h RHGenericSPI.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_Serial.o: RH_Serial.cpp RH_Serial.h RHGenericDriver.h RadioHead.h RHCRC.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+RH_TCP.o: RH_TCP.cpp RadioHead.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)

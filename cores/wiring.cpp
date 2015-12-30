@@ -83,19 +83,17 @@ bool init() {
 	sb1_Write16(0xde, sb1_Read16(0xde) | 0x02);   // not Available for 8051A Access ADC
 	sb1_Write(0xe0, 0x0050fe00L); // baseaddr = 0xfe00, disable irq
 	io_outpb(0xfe01, 0x00);
-        while((io_inpb(0xfe02) & 0x01) != 0) io_inpb(0xfe04);
+    while((io_inpb(0xfe02) & 0x01) != 0) io_inpb(0xfe04);
 
 	// set MCM Base Address
 	mcmInit();
 	for(i=0; i<4; i++)
 		mc_SetMode(i, MCMODE_PWM_SIFB);
 
-	// init wdt1
-	wdt_init();
-
 	// init spinlock
 	spinLockInit();
 
+#if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)
 	if(Global_irq_Init == false)
 	{
 		// set MCM IRQ
@@ -111,7 +109,7 @@ bool init() {
 	    Set_MCIRQ(GetMCIRQ());
 	    Global_irq_Init = true;
 	}
-/*
+
 	//CDC
 	USBDEV = CreateUSBDevice();
 	if(USBDEV == NULL)
@@ -127,7 +125,8 @@ bool init() {
 		printf("init2 error\n");
 		return false;
 	}
-*/  
+#endif
+
 	//io_Close();
 	return true;
 }

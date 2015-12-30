@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 #include "Stream.h"
-#include "twi.h"
+#include "utility/twi.h"
 
 #define BUFFER_LENGTH    (128)
 #define STANDARDMODE     (100000UL)

@@ -7,15 +7,16 @@ INCLUDE := ./
 
 SRCS := $(wildcard *.cpp)
 INIT_OBJS := 86Duino_Init.o
-OBJS := $(filter-out $(INIT_OBJS), $(patsubst %cpp, %o, $(SRCS)))
+MAIN_OBJS := main.o
+OBJS := $(filter-out $(INIT_OBJS) $(MAIN_OBJS), $(patsubst %cpp, %o, $(SRCS)))
 TARGETS := libcore.a
 
 .PHONY : everything clean all
 
-everything: $(TARGETS) $(INIT_OBJS)
+everything: $(TARGETS) $(INIT_OBJS) $(MAIN_OBJS)
 
 clean:
-	rm $(OBJS) $(INIT_OBJS) $(TARGETS)
+	rm $(OBJS) $(INIT_OBJS) $(MAIN_OBJS) $(TARGETS)
 
 all: clean everything
 
@@ -25,5 +26,5 @@ $(TARGETS): $(OBJS)
 %.o: %.cpp
 	$(CC) $(CFLAGS) $< -o $@ -I $(INCLUDE)
 
-include $(OBJS:.o=.d)
+-include $(OBJS:.o=.d)
 

@@ -15,7 +15,7 @@ In addition, also support the following libraries:
 * Wire
   - Add three funtions for multi-thread condition: send(), receive(), sensorRead(), sensorReadEX()
 * Encoder
-  _NOTE_: Not all functions are implemented in this library.
+  - _NOTE_: Not all functions are implemented in this library.
           Some functions are unused, ex: setIndexReset(), setComparator(), setRange(),
 		  readNanoseconds(), attachInterrupt(), detachInterrupt() 
 * Rosserial86

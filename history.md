@@ -13,7 +13,7 @@ In addition, also support the following libraries:
 * Stepper
 * TFT
 * Wire
-  - Add three funtions for multi-thread condition: send(), receive(), sensorRead(), sensorReadEX()
+  - Add four funtions for multi-thread condition: send(), receive(), sensorRead(), sensorReadEX()
 * Encoder
   - _NOTE_: Not all functions are implemented in this library.
           Some functions are unused, ex: setIndexReset(), setComparator(), setRange(),

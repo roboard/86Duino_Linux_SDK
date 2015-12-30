@@ -34,9 +34,9 @@ the following libraries:
 HOW TO COMPILE
 --------------
 
-Copy the Makefile in the example folder and paste it to your program folder 
+Copy the Makefile in the example folder to your program folder 
 that you want to compile, and then type "make" command to compile source
-code to produce your 86Duino program (if you want to use 86Duino libraries,
+code to produce your 86Duino linux program (if you want to use 86Duino libraries,
 see the following "USE THIRD-PARTY LIBRARIES" section).
 
 

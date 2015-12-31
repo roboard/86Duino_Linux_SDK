@@ -1,9 +1,9 @@
 #### v1.00 ####
 
-For 86Duino Standard APIs (see 86Duino Language Reference page: http://www.86duino.com/?page_id=2255 ),
+For 86Duino Standard APIs *see [86Duino Language Reference page](http://www.86duino.com/?page_id=2255)*,
 you can call them like Arduino except interrupts() and noInterrupts() that are invalid under Linux.
 
-In addition, also support the following libraries:
+In addition, 86Duino Linux SDK also support the following libraries:
  
 * Ethernet
 * Firmata

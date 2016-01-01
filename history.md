@@ -3,7 +3,7 @@
 For 86Duino Standard APIs *see [86Duino Language Reference page](http://www.86duino.com/?page_id=2255)*,
 you can call them like Arduino except interrupts() and noInterrupts() that are invalid under Linux.
 
-_Note_: In Linux 86Duino Standard APIs, the USB Serial is replaced by Hardware Serial1 (COM1), the data will be send form COM1 if you call like Serial.write() or Serial.print() function in your program. 
+_Note_: In Linux 86Duino Standard APIs, the USB Serial is replaced by Hardware Serial1 (COM1), the data will be send from COM1 if you call like Serial.write() or Serial.print() function in your program. 
 
 In addition, 86Duino Linux SDK also support the following libraries:
  

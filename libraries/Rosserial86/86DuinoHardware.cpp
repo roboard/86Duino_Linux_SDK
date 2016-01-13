@@ -989,7 +989,6 @@ bool x86DuinoHardware::setDhcp()
 	
 	return false;
 #else
-	usedWiFi = false;
 	return true;
 #endif
 }
@@ -1004,7 +1003,6 @@ bool x86DuinoHardware::setEthernet(char *ip)
 							 , 0xFFUL & (number >> 16));
 	return setEthernet(ip, dns);
 #else
-	usedWiFi = false;
 	return true;
 #endif
 }
@@ -1019,7 +1017,6 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns)
 							     , 0xFFUL & (number >> 16));
 	return setEthernet(ip, dns, gateway);
 #else
-	usedWiFi = false;
 	return true;
 #endif
 }
@@ -1030,14 +1027,12 @@ bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway)
 	char subnet[] = "255.255.255.0";
 	return setEthernet(ip, dns, gateway, subnet);
 #else
-	usedWiFi = false;
 	return true;
 #endif
 }
 
 bool x86DuinoHardware::setEthernet(char *ip, char *dns, char *gateway, char *subnet)
 {
-	usedWiFi = false;
 #ifdef ROS_USE_SWSSOCK_LIB__
 	FILE *opt;
 	unsigned long number;

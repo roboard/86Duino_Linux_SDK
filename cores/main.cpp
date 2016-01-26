@@ -17,21 +17,23 @@
 unsigned _stklen = 4096 * 1024;
 
 // Error process
-int led = 13;
-#define LONG_TIME    (1000L)
-#define SHORT_TIME   (50L)
-#define ATIMESIZE    (39)
-int led_stat = 0;
-static int ledtime[ATIMESIZE+1] = {SHORT_TIME, LONG_TIME, SHORT_TIME, LONG_TIME, SHORT_TIME, LONG_TIME,
-                                   SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
-				   SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
-				   SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
-				   SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
-				   SHORT_TIME, LONG_TIME
-				  };
-static bool first = true;
-unsigned long nowledtime = 0L;
+#define LONG_TIME		(1000L)
+#define SHORT_TIME 	(50L)
+#define ATIMESIZE 		(39)
+
+static int _ledtime[ATIMESIZE+1] = {SHORT_TIME, LONG_TIME, SHORT_TIME, LONG_TIME, SHORT_TIME, LONG_TIME,
+                             SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
+                             SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
+                             SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
+                             SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME, SHORT_TIME,
+                             SHORT_TIME, LONG_TIME
+                             };
+
 void error_led_blink(void) {
+	static int led = 13;
+	static int led_stat = 0;
+	static bool first = true;
+	static unsigned long nowledtime = 0L;
 	if(first == true)
 	{
 		nowledtime = millis();
@@ -39,7 +41,7 @@ void error_led_blink(void) {
 		first = false;
 	}
 	
-	if((millis() - nowledtime) > ledtime[led_stat])
+	if((millis() - nowledtime) > _ledtime[led_stat])
 	{
 		if(led_stat == ATIMESIZE) led_stat = 0; else led_stat++;
 		first = true;
@@ -89,11 +91,17 @@ static __attribute__((constructor(101))) void _f_init()
 #endif
 }
 
+#if defined (DMP_DOS_DJGPP)
+DPMI_MEMORY_ALL_LOCK(0)
+#endif
 
-//DPMI_MEMORY_ALL_LOCK(0)
 int main(void)
 {
+#if defined (DMP_LINUX)
 	interrupt_init();
+#elif defined (DMP_DOS_DJGPP)
+	__djgpp_set_ctrl_c(0);
+#endif
 	initVariant();
 	
 	setup();
@@ -101,7 +109,9 @@ int main(void)
 	for (;;)
 	{
 		loop();
-		//if (serialEventRun) serialEventRun();
+		#if defined (DMP_DOS_DJGPP)
+		if (serialEventRun) serialEventRun();
+		#endif
 	}	
 	return 0;
 }

@@ -486,6 +486,24 @@ DMPAPI(bool) com_SetBaud(int com, unsigned int baudrate) {
             return false;
         }
         
+        unsigned char lcr;
+        unsigned char lsb = (unsigned char)(((unsigned short)baud) & 0x00FF);
+        unsigned char msb = (unsigned char)((((unsigned short)baud) & 0xFF00) >> 8);
+
+        lcr = io_inpb(COM_baseaddr[com] + 3);  
+        io_outpb(COM_baseaddr[com] + 3, 0x80); 
+        
+        do {
+            io_outpb(COM_baseaddr[com], lsb);
+        } while (io_inpb(COM_baseaddr[com]) != lsb);
+        
+        do {
+            io_outpb(COM_baseaddr[com] + 1, msb);
+        } while (io_inpb(COM_baseaddr[com] + 1) != msb);
+        
+        io_inpb(0x80); // do IO delay
+        io_outpb(COM_baseaddr[com] + 3, lcr);  
+		
         }
     #else
         // TODO ...

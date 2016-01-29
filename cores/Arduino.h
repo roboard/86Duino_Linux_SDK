@@ -181,6 +181,8 @@ long random(long, long);
 void randomSeed(unsigned int);
 long map(long, long, long, long, long);
 
+void attachInterrupt(uint8_t, void (*userFunc)(void*), void *args, int mode);
+
 #endif
 
 #endif

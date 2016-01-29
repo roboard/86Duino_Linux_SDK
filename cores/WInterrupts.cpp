@@ -43,8 +43,7 @@
 
 struct interrupt {
     bool used;
-    void (*callback)(void *arg);
-	void *callback_args;
+    void (*callback)(void);
     uint32_t mode;
     uint32_t start;
     uint32_t timeout;
@@ -152,7 +151,7 @@ void *intrMain(void* pargs)
 		for(int i = 0; i < INTERRUPTS; i++)
 		{
 			if(do_callback[i] && idc.intr[i].used)
-				idc.intr[i].callback(idc.intr[i].callback_args);
+				idc.intr[i].callback();
 			do_callback[i] = false;
 		}
 		OSSPINUNLOCK(idc.spinlock);
@@ -273,13 +272,12 @@ DMP_INLINE(void) mcmsif_init(int32_t mc)
 }
 
 #if defined (DMP_LINUX)
-DMP_INLINE(int) addIRQEntry(uint8_t interruptNum, void (*callback)(void*), void *args, int mode, uint32_t timeout)
+DMP_INLINE(int) addIRQEntry(uint8_t interruptNum, void (*callback)(void), int mode, uint32_t timeout)
 {
 	OSSPINLOCK(idc.spinlock);
 
 	idc.intr[interruptNum].used = true;
     idc.intr[interruptNum].callback = callback;
-	idc.intr[interruptNum].callback_args = args;
     idc.intr[interruptNum].mode = mode;
     idc.intr[interruptNum].start = micros();
     idc.intr[interruptNum].timeout = timeout;
@@ -376,7 +374,7 @@ DMPAPI(void) attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int m
 		return;
 	}
 
-    addIRQEntry(interruptNum, userFunc, NULL, mode, 0);
+    addIRQEntry(interruptNum, userFunc, mode, 0);
 	#elif defined (DMP_DOS_DJGPP)
 	int i;
 	unsigned short crossbar_ioaddr;
@@ -465,31 +463,6 @@ DMPAPI(void) attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int m
 	#endif
 }
 
-DMPAPI(void) attachInterrupt(uint8_t interruptNum, void (*userFunc)(void*), void *args, int mode)
-{
-	#if defined (DMP_LINUX)
-    if( mode < 0 || mode > 4 )
-    {
-        printf("Not support this mode\n");
-        return;
-    }
-
-    if( interruptNum > MAX_INTR_NUM )
-    {
-        printf("Not support this interruptNum\n");
-        return;
-    }
-
-	if( idc.intr[interruptNum].used == true )
-	{
-		printf("This pin was attached before\n");
-		return;
-	}
-
-    addIRQEntry(interruptNum, userFunc, args, mode, 0);
-	#endif
-}
-
 DMP_INLINE(void) mcmsif_close(int32_t mc)
 {
 	mcsif_Disable(mc, MCSIF_MODULEB);
@@ -551,7 +524,7 @@ DMPAPI(void) attachTimerInterrupt(uint8_t interruptNum, void (*callback)(void), 
 {
     if(interruptNum != 12)
         return;
-    addIRQEntry(interruptNum, callback, NULL, 0, microseconds);
+    addIRQEntry(interruptNum, callback, 0, microseconds);
 }
 
 DMPAPI(void) detachTimerInterrupt(void)

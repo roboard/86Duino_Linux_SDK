@@ -30,8 +30,7 @@ class TimerOne
 {
 	private:
 		bool timer1Enable;
-		double _period;
-		double _duty[PINS];
+		unsigned long fixedperiod;
          
 	public:
 		TimerOne();
@@ -46,7 +45,9 @@ class TimerOne
 		void resume();
 		unsigned long read();
 		void pwm(char pin, int duty, long microseconds=-1);
+		void freePwm(char pin, unsigned long duty, unsigned long microseconds);
 		void disablePwm(char pin);
+		void disableFreePwm(char pin);
 		void attachInterrupt(void (*isr)(), long microseconds=-1);
 		void detachInterrupt();
 		void setPeriod(long microseconds);

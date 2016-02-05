@@ -100,15 +100,18 @@ DMPAPI(void) TimerOne::initialize(long microseconds) {
 	setPeriod(microseconds);
 }
 
-TimerOne::TimerOne() {
-	isrCallback = NULL;
-	timer1Enable = false;
-}
-
 #define YES    (1)
 #define NO     (2)
 static int mc_md_inuse[PINS];
 static int isPwmInit[PINS];
+static unsigned long _fperiod[PINS]; // used for freePwm() and disableFreePwm()
+static unsigned long _fduty[PINS]; // used for freePwm() and disableFreePwm()
+static unsigned long _duty[PINS];
+
+TimerOne::TimerOne() {
+	isrCallback = NULL;
+	timer1Enable = false;
+}
 
 DMPAPI(void) TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic access
 	int mcn, mdn, i;
@@ -116,12 +119,12 @@ DMPAPI(void) TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic 
 	
 	periodMicroseconds = microseconds > 0 ? microseconds : 1;
 	pwmPeriod = microseconds;
-	_period = (double)(microseconds*SYSCLK);
+	fixedperiod = microseconds*SYSCLK;
 
 #if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)	
 	if(timer1Enable == true) // if call attachInterrupt() or start(), timer1Enable is ture
 	{
-		mcpwm_SetWidth(mc, md, _period-1.0, 0L);
+		mcpwm_SetWidth(mc, md, fixedperiod-1L, 0L);
 	    mcpwm_ReloadPWM(mc, md, MCPWM_RELOAD_PEREND);
 	}
 #endif
@@ -136,7 +139,7 @@ DMPAPI(void) TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic 
 			mcn = arduino_to_mc_md[0][i];
 	    	mdn = arduino_to_mc_md[1][i];
 			if(mcpwm_ReadReloadPWM(mcn, mdn) != 0) mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
-			mcpwm_SetWidth(mcn, mdn, _period-1.0, _duty[i]-1.0);
+			mcpwm_SetWidth(mcn, mdn, fixedperiod-1L, _duty[i]-1L);
 		    mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_PEREND);
 		}
 	}
@@ -145,12 +148,12 @@ DMPAPI(void) TimerOne::setPeriod(long microseconds)	{ // AR modified for atomic 
 #endif
 }
 
-DMP_INLINE(void) safeClosePwmModule(int mcn, int mdn, double _period) {
+DMP_INLINE(void) safeClosePwmModule(int mcn, int mdn, unsigned long period) {
 	if(mcpwm_ReadReloadPWM(mcn, mdn) != 0) mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
-	mcpwm_SetWidth(mcn, mdn, _period-1.0, 0L);
+	mcpwm_SetWidth(mcn, mdn, period-1L, 0L);
 	mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_PEREND);
 	while(mcpwm_ReadReloadPWM(mcn, mdn) != 0L);
-	while(mcpwm_ReadSTATREG2(mcn, mdn) > (_period - 1L));
+	while(mcpwm_ReadSTATREG2(mcn, mdn) > (period - 1L));
 	mcpwm_Disable(mcn, mdn);
 }
 
@@ -159,7 +162,7 @@ DMPAPI(void) TimerOne::setPwmDuty(char pin, int duty) {
 	unsigned short crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
 
 	if(pin < 0 || pin >= PINS || timerOneInit == false) return;
-	
+
 	mcn = arduino_to_mc_md[0][pin];
     mdn = arduino_to_mc_md[1][pin];
     
@@ -173,14 +176,14 @@ DMPAPI(void) TimerOne::setPwmDuty(char pin, int duty) {
 	{
 		if(mc_md_inuse[pin] == YES)
 		{
-			safeClosePwmModule(mcn, mdn, _period);
+			safeClosePwmModule(mcn, mdn, fixedperiod);
 			mc_md_inuse[pin] = NO;
 		}
+		#if defined (DMP_LINUX)
+			unLockMCM(mcn, mdn);
+		#endif
 		pinMode(pin, OUTPUT);
 		digitalWrite(pin, LOW);
-#if defined (DMP_LINUX)
-		unLockMCM(mcn, mdn);
-#endif
 		return;
 	}
 
@@ -198,11 +201,10 @@ DMPAPI(void) TimerOne::setPwmDuty(char pin, int duty) {
 		else
 			io_outpb(crossbar_ioaddr + 3, 0x02); // GPIO port3: 1A, 1B, 1C, 3B
     }
-    
-    _duty[pin] = _period*duty/1024.0;
-    
+
 	if(mcpwm_ReadReloadPWM(mcn, mdn) != 0) mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
-	mcpwm_SetWidth(mcn, mdn, _period-1.0, _duty[pin]-1.0);
+	_duty[pin] = (fixedperiod*duty)/1024L;
+	mcpwm_SetWidth(mcn, mdn, fixedperiod-1L, _duty[pin]-1L);
 	mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_PEREND);
 
 #if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)		
@@ -224,16 +226,84 @@ DMPAPI(void) TimerOne::setPwmDuty(char pin, int duty) {
 DMPAPI(void) TimerOne::pwm(char pin, int duty, long microseconds) { // expects duty cycle to be 10 bit (1024)
 	int mcn, mdn;
 	if(pin < 0 || pin >= PINS || timerOneInit == false) return;
-	isPwmInit[pin] = 1; // for Arduino compatibility
-	
-	if(microseconds > 0) setPeriod(microseconds);
 	
 	mcn = arduino_to_mc_md[0][pin];
 	mdn = arduino_to_mc_md[1][pin];
 	  
 	if(mcn == NOPWM || mdn == NOPWM) return;
-  	
+	
+	isPwmInit[pin] = 1; // for Arduino compatibility
+
+	if(microseconds > 0) setPeriod(microseconds);
+
   	setPwmDuty(pin, duty);
+}
+
+DMPAPI(void) TimerOne::freePwm(char pin, unsigned long duty, unsigned long microseconds) {
+	int mcn, mdn;
+	unsigned short crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
+	if(pin < 0 || pin >= PINS || microseconds == 0) return;
+	
+	mcn = arduino_to_mc_md[0][pin];
+	mdn = arduino_to_mc_md[1][pin];
+	  
+	if(mcn == NOPWM || mdn == NOPWM) return;
+
+#if defined (DMP_LINUX)
+	lockMCM(mcn, mdn);
+#endif
+
+	if(duty == 0)
+	{
+		if(mc_md_inuse[pin] == YES)
+		{
+			safeClosePwmModule(mcn, mdn, microseconds*SYSCLK);
+			mc_md_inuse[pin] = NO;
+		}
+		#if defined (DMP_LINUX)
+			unLockMCM(mcn, mdn);
+		#endif
+		pinMode(pin, OUTPUT);
+		digitalWrite(pin, LOW);
+		return;
+	}
+
+	_fperiod[pin] = microseconds*SYSCLK;
+	_fduty[pin] = duty*SYSCLK;
+#if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)		
+	io_DisableINT();
+#endif
+    if(mc_md_inuse[pin] == 0 || mc_md_inuse[pin] == NO)
+	{
+		pwmInit(mcn, mdn);
+		
+		if (pin <= 9)
+			io_outpb(crossbar_ioaddr + 2, 0x01); // GPIO port2: 0A, 0B, 0C, 3A
+		else if (pin > 28)
+	    	io_outpb(crossbar_ioaddr, 0x03); // GPIO port0: 2A, 2B, 2C, 3C
+		else
+			io_outpb(crossbar_ioaddr + 3, 0x02); // GPIO port3: 1A, 1B, 1C, 3B
+    }
+
+	if(mcpwm_ReadReloadPWM(mcn, mdn) != 0) mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
+
+	mcpwm_SetWidth(mcn, mdn, _fperiod[pin]-1L, _fduty[pin]-1L);
+	mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_PEREND);
+
+#if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)		
+    io_RestoreINT();
+#endif
+	
+    if(mc_md_inuse[pin] == 0 || mc_md_inuse[pin] == NO)
+    {
+    	io_outpb(crossbar_ioaddr + 0x90 + pinMap[pin], 0x08); // Enable PWM pin
+		mcpwm_Enable(mcn, mdn);
+		mc_md_inuse[pin] = YES;
+    }
+
+#if defined (DMP_LINUX)
+	unLockMCM(mcn, mdn);
+#endif
 }
 
 DMPAPI(void) TimerOne::disablePwm(char pin) {
@@ -252,9 +322,34 @@ DMPAPI(void) TimerOne::disablePwm(char pin) {
 #endif	
 	if(mc_md_inuse[pin] == YES)
 	{
-		safeClosePwmModule(mcn, mdn, _period);
+		safeClosePwmModule(mcn, mdn, fixedperiod);
 		mc_md_inuse[pin] = NO;
 		isPwmInit[pin] = 0;
+		io_outpb(crossbar_ioaddr + 0x90 + pinMap[pin], 0x01); // Disable PWM pin (To be GPIO)
+	}
+#if defined (DMP_LINUX)
+	unLockMCM(mcn, mdn);
+#endif
+}
+
+DMPAPI(void) TimerOne::disableFreePwm(char pin) {
+	unsigned short crossbar_ioaddr = sb_Read16(0x64)&0xfffe;
+	int mcn, mdn;
+	
+	if(pin < 0 || pin >= PINS) return;
+	
+	mcn = arduino_to_mc_md[0][pin];
+    mdn = arduino_to_mc_md[1][pin];
+    
+    if(mcn == NOPWM || mdn == NOPWM) return;
+
+#if defined (DMP_LINUX)
+	lockMCM(mcn, mdn);
+#endif	
+	if(mc_md_inuse[pin] == YES)
+	{
+		safeClosePwmModule(mcn, mdn, _fperiod[pin]);
+		mc_md_inuse[pin] = NO;
 		io_outpb(crossbar_ioaddr + 0x90 + pinMap[pin], 0x01); // Disable PWM pin (To be GPIO)
 	}
 #if defined (DMP_LINUX)
@@ -284,7 +379,7 @@ DMPAPI(void) TimerOne::attachInterrupt(void (*isr)(void), long microseconds) {
     }
     enable_MCINT(PULSE_END_INT);
 
-	mcpwm_SetWidth(mc, md, _period-1.0, 0L);
+	mcpwm_SetWidth(mc, md, fixedperiod-1L, 0L);
 	
 	io_DisableINT();
 	isrCallback = isr; // register the user's callback with the real ISR
@@ -323,7 +418,7 @@ DMPAPI(void) TimerOne::start() { // AR addition, renamed by Lex to reflect it's 
 #if defined (DMP_DOS_BC) || defined (DMP_DOS_DJGPP)
 	if(timer1Enable == false)
 	{
-	    mcpwm_SetWidth(mc, md, _period-1.0, 0L);
+		mcpwm_SetWidth(mc, md, fixedperiod-1L, 0L);
 		mcpwm_Enable(mc, md);
 		timer1Enable = true;
 	}
@@ -340,7 +435,7 @@ DMPAPI(void) TimerOne::start() { // AR addition, renamed by Lex to reflect it's 
 			#endif
 
 			if(mcpwm_ReadReloadPWM(mcn, mdn) != 0) mcpwm_ReloadPWM(mcn, mdn, MCPWM_RELOAD_CANCEL);
-			mcpwm_SetWidth(mcn, mdn, _period-1.0, _duty[i]-1.0);
+			mcpwm_SetWidth(mcn, mdn, fixedperiod-1L, _duty[i]-1L);
 			mcpwm_Enable(mcn, mdn);
 			mc_md_inuse[i] = YES;
 
@@ -386,7 +481,7 @@ DMPAPI(void) TimerOne::stop() {
 DMPAPI(unsigned long) TimerOne::read() {	//returns the value of the timer in microseconds
 #if defined (DMP_DOS_DJGPP)
 	unsigned long tmp = mcpwm_ReadSTATREG2(mc, md);
-	return ((_period - tmp) / SYSCLK);
+	return ((fixedperiod - tmp) / SYSCLK);
 #endif
 }
 

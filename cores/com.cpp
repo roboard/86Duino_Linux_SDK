@@ -329,7 +329,7 @@ DMPAPI(void) com_Close(int com) {
     COM_ioSection[com] = -1;
 }
 
-DMPAPI(bool) com_SetFlowControl(int com, bool xonxoff, bool ctsrts) {
+DMPAPI(bool) com_SetFlowControl(int com, bool xonxoff, bool rtscts) {
 	int action = TCIOFF;
     
 	if (xonxoff) action = TCION;

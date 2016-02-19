@@ -52,7 +52,7 @@ class HardwareSerial : public Stream
     virtual int available(void);
     virtual int peek(void);
     virtual int read(void);
-	virtual bool receive(void);
+	virtual bool receive(unsigned char*, int);
     virtual void flush(void);
     virtual size_t write(uint8_t);
     inline size_t write(unsigned long n) { return write((uint8_t)n); }

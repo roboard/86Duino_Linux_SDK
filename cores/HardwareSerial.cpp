@@ -141,6 +141,14 @@ bool HardwareSerial::setFlowControl(bool xonxoff, bool ctsrts) {
 	return com_SetFlowControl(port, xonxoff, ctsrts);
 }
 
+bool HardwareSerial::setBaudrate(unsigned long baud) {
+	return com_SetBaud(port, baud);
+}
+
+bool HardwareSerial::setFormat(uint8_t config) {
+	return com_SetFormat(port, config);
+}
+
 int HardwareSerial::available(void) {
     if(hadbegin == false) return 0;
 	return com_QueryRFIFO(port);
@@ -177,6 +185,7 @@ int HardwareSerial::read(void) {
 bool HardwareSerial::receive(unsigned char* buf, int bufsize) {
 	return com_Receive(port, buf, bufsize);
 }
+
 void HardwareSerial::flush() {
     if(hadbegin == false) return;
 	com_FlushWFIFO(port);

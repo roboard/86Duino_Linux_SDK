@@ -505,7 +505,7 @@ DMPAPI(bool) com_SetBaud(int com, unsigned int baudrate) {
         cfsetospeed(&(COM_info[com].newstate), newspeed);
         cfsetispeed(&(COM_info[com].newstate), newspeed);
 
-    	if(tcsetattr(COM_info[com].fp, TCSAFLUSH, &(COM_info[com].newstate)) < 0)
+    	if(tcsetattr(COM_info[com].fp, TCSANOW, &(COM_info[com].newstate)) < 0)
     	{
             cfsetospeed(&(COM_info[com].newstate), oldospeed);
             cfsetispeed(&(COM_info[com].newstate), oldispeed);

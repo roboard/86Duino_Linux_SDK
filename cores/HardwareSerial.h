@@ -49,8 +49,6 @@ class HardwareSerial : public Stream
     void begin(unsigned long , uint8_t, int);
     void end();
 	virtual bool setFlowControl(bool, bool);
-	virtual bool setBaudrate(unsigned long baud);
-	virtual bool setFormat(uint8_t config);
     virtual int available(void);
     virtual int peek(void);
     virtual int read(void);

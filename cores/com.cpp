@@ -329,32 +329,7 @@ DMPAPI(void) com_Close(int com) {
     COM_ioSection[com] = -1;
 }
 
-DMPAPI(bool) com_SetFlowControl(int com, bool xonxoff, bool ctsrts) {
-	int action = TCIOFF;
-    
-	if (xonxoff) action = TCION;
-    if (tcflow(COM_info[com].fp, action)) return false;
-    
-	// rtscts
-    struct termios termio;
 
-    // get current modes
-    if (tcgetattr(COM_info[com].fp, &termio))
-	{
-        printf("uart: tcgetattr() failed");
-        return false;
-    }
-
-    if (rtscts)
-        COM_info[com].newstate.c_cflag |= CRTSCTS;
-    else
-        COM_info[com].newstate.c_cflag &= ~CRTSCTS;
-
-    if (tcsetattr(COM_info[com].fp, TCSAFLUSH, &(COM_info[com].newstate)) < 0) {
-        printf("uart: tcsetattr() failed");
-        return false;
-    }
-}
 
 DMPAPI(bool) com_SetFormat(int com, unsigned char format) {
     int bytesize, stopbit, parity;

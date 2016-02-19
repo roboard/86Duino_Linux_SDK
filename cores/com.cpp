@@ -354,6 +354,8 @@ DMPAPI(bool) com_SetFlowControl(int com, bool xonxoff, bool ctsrts) {
         printf("uart: tcsetattr() failed");
         return false;
     }
+	
+	return true;
 }
 
 DMPAPI(bool) com_SetFormat(int com, unsigned char format) {

@@ -104,6 +104,7 @@ DMPAPI(bool) com_Init(int com);
      #define COM_HDUPLEX_TXDEN      (3)     // half-duplex by TXDEN-control
 DMPAPI(void) com_Close(int com);
 
+DMPAPI(bool) com_SetFlowControl(int com, bool xonxoff, bool ctsrts);
 DMPAPI(bool) com_SetBaud(int com, unsigned int bps);
     // for UART
     //#define COMBAUD_748800BPS       (0x8002)  // 57600 * 13 (invalid for RB-100)

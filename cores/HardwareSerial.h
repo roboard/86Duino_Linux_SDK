@@ -48,9 +48,11 @@ class HardwareSerial : public Stream
     void begin(unsigned long, uint8_t);
     void begin(unsigned long , uint8_t, int);
     void end();
+	virtual bool setFlowControl(bool, bool);
     virtual int available(void);
     virtual int peek(void);
     virtual int read(void);
+	virtual bool receive(void);
     virtual void flush(void);
     virtual size_t write(uint8_t);
     inline size_t write(unsigned long n) { return write((uint8_t)n); }

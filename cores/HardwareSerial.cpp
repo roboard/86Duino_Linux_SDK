@@ -137,6 +137,10 @@ void HardwareSerial::end() {
 	hadbegin = false;
 }
 
+bool HardwareSerial::setFlowControl(bool xonxoff, bool ctsrts) {
+	return com_SetFlowControl(port, xonxoff, ctsrts);
+}
+
 int HardwareSerial::available(void) {
     if(hadbegin == false) return 0;
 	return com_QueryRFIFO(port);
@@ -170,6 +174,9 @@ int HardwareSerial::read(void) {
 	}
 }
 
+bool HardwareSerial::receive(unsigned char* buf, int bufsize) {
+	return com_Receive(port, buf, bufsize);
+}
 void HardwareSerial::flush() {
     if(hadbegin == false) return;
 	com_FlushWFIFO(port);

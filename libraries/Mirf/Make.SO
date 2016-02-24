@@ -1,0 +1,29 @@
+
+CC := gcc
+CFLAGS := -c -w -g -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -O1 -DARDUINO=158 -D_86DUINO=210
+
+INCLUDE_CORE := -I../../cores -I./ -I../SPI
+OBJS := Mirf.o MirfHardwareSpiDriver.o MirfSpiDriver.o
+TARGETS := libMirf.so.1.0
+
+.PHONY : everything clean all
+
+everything: $(TARGETS)
+
+clean:
+	rm $(OBJS) $(TARGETS)
+
+all: clean everything
+
+$(TARGETS): $(OBJS)
+	ld -shared -soname libMirf.so.1 -o $(TARGETS) $^
+
+Mirf.o: Mirf.cpp Mirf.h nRF24L01.h MirfSpiDriver.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+MirfHardwareSpiDriver.o: MirfHardwareSpiDriver.cpp MirfHardwareSpiDriver.h MirfSpiDriver.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+
+MirfSpiDriver.o: MirfSpiDriver.cpp MirfSpiDriver.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+

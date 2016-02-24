@@ -1,0 +1,34 @@
+
+CC := gcc
+CFLAGS := -c -w -g -MMD -fpermissive -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -O1 -DARDUINO=158 -D_86DUINO=210
+
+INCLUDE := ./
+
+SRCS := $(wildcard *.cpp)
+INIT_OBJS := 86Duino_Init.o
+MAIN_OBJS := main.o
+OBJS := $(filter-out $(INIT_OBJS) $(MAIN_OBJS), $(patsubst %cpp, %o, $(SRCS)))
+TARGETS := libcore.so.1.0
+
+.PHONY : everything clean all
+
+everything: $(TARGETS) $(INIT_OBJS) $(MAIN_OBJS)
+
+clean:
+	rm $(OBJS) $(INIT_OBJS) $(MAIN_OBJS) $(TARGETS)
+
+all: clean everything
+
+install : $(TARGETS)
+	\cp -f ./$(TARGETS) /usr/lib
+	ln -sf /usr/lib/$(TARGETS) /usr/lib/libcore.so
+	ln -sf /usr/lib/$(TARGETS) /usr/lib/libcore.so.1
+
+$(TARGETS): $(OBJS)
+	ld -shared -soname libcore.so.1 -o $(TARGETS) $^
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) $< -o $@ -I $(INCLUDE)
+
+-include $(OBJS:.o=.d)
+

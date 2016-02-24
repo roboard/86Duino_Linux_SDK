@@ -1,0 +1,23 @@
+
+CC := gcc
+CFLAGS := -c -w -g -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -O1 -DARDUINO=158 -D_86DUINO=210
+
+INCLUDE_CORE := -I../../cores -I./
+OBJS := TimerOne.o
+TARGETS := libTimerOne.so.1.0
+
+.PHONY : everything clean all
+
+everything: $(TARGETS)
+
+clean:
+	rm $(OBJS) $(TARGETS)
+
+all: clean everything
+
+$(TARGETS): $(OBJS)
+	ld -shared -soname libTimerOne.so.1 -o $(TARGETS) $^
+
+TimerOne.o: TimerOne.cpp TimerOne.h
+	$(CC) $(CFLAGS) $< -o $@ $(INCLUDE_CORE)
+

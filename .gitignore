@@ -1,7 +1,6 @@
 *.pyc
 *.o
 *.a
-*.so
 *.dblite
 *.tgz
 *.bin

@@ -89,7 +89,7 @@ void Close_Pwm(uint8_t pin) {
 }
 
 int analogRead(uint8_t pin) {
-	unsigned long d;
+	unsigned long d, t;
 	
 	if((pin > 6 && pin < 45) || pin > 51) return 0xffff;
 	
@@ -106,15 +106,17 @@ int analogRead(uint8_t pin) {
 	io_outpb(BaseAddress + 1, 0x08); // disable ADC
 	io_outpb(BaseAddress + 0, (0x01<<pin));
 	io_outpb(BaseAddress + 1, 0x01); // enable ADC_ST
-    for(int i=0; i<20; i++) io_inpb(BaseAddress + 2);
-	if((io_inpb(BaseAddress + 2) & 0x01) == 0)
+	for(t=timer_NowTime();(io_inpb(BaseAddress + 2) & 0x01) == 0;)
     {
-    #if defined (DMP_LINUX)
-        unLockADC();
-    #elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
-        io_RestoreINT();
-    #endif
-        return 0xffff;
+		if((timer_NowTime() - t) >= 1000L)
+		{
+			#if defined (DMP_LINUX)
+			unLockADC();
+			#elif defined (DMP_DOS_BC30) || defined (DMP_DOS_DJGPP) || defined (DMP_DOS_WATCOM)
+			io_RestoreINT();
+			#endif
+			return 0xffff;
+		}
     }
     d = io_inpw(BaseAddress + 4);
     

@@ -90,12 +90,20 @@ __dmp_inline(void) rdtsc_delay_us(unsigned long us) {  // assuming us < (2^32)/c
 }
 
 DMPAPI(void) timer_Delay(unsigned long ms) {
-    for (; ms > 100L; ms = ms - 100L) rdtsc_delay_us(100000L);
+    #if defined(DMP_LINUX)
+        for (; ms > 10L; ms = ms - 10L) usleep(10000L);
+    #elif defined(DMP_DOS_DJGPP)
+        for (; ms > 100L; ms = ms - 100L) rdtsc_delay_us(100000L);
+    #endif
     if (ms > 0L) rdtsc_delay_us(ms * 1000L);
 }
 
 DMPAPI(void) timer_DelayMicroseconds(unsigned long us) {
-    for (; us > 100000L; us = us - 100000L) rdtsc_delay_us(100000L);
+    #if defined(DMP_LINUX)
+        for (; us > 100L; us = us - 100L) rdtsc_delay_us(100L);
+    #elif defined(DMP_DOS_DJGPP)
+        for (; us > 100000L; us = us - 100000L) rdtsc_delay_us(100000L);
+    #endif
     if (us > 0L) rdtsc_delay_us(us);
 }
 

@@ -10,6 +10,7 @@
 
 // linux
 #include <stdint.h>
+#include <unistd.h>
 //#include "itoa.h"
 
 #include "avr/pgmspace.h"

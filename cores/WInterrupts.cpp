@@ -94,11 +94,12 @@ static unsigned long _usedMode[4][3];
 void *intrMain(void* pargs)
 {
 	unsigned long capdata;
-	int32_t m, n;
+	int32_t i, m, n;
+    
     while(true)
     {
         OSSPINLOCK(idc.spinlock);
-        for(int i = 0; i < INTERRUPTS; i++)
+        for(i = 0; i < INTERRUPTS; i++)
         {
 			if(idc.intr[i].used == false)
 				continue;
@@ -147,8 +148,13 @@ void *intrMain(void* pargs)
             }
         }
         OSSPINUNLOCK(idc.spinlock);
-		OSSPINLOCK(idc.spinlock);
-		for(int i = 0; i < INTERRUPTS; i++)
+        
+        for (i = 0; i < INTERRUPTS; i++)
+            if (do_callback[i] == true) break;
+        if (i == INTERRUPTS) usleep(10000); // sleep 10ms if no running cb.
+		
+        OSSPINLOCK(idc.spinlock);
+		for(i = 0; i < INTERRUPTS; i++)
 		{
 			if(do_callback[i] && idc.intr[i].used)
 				idc.intr[i].callback();
